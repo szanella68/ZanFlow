@@ -4,7 +4,7 @@ import Canvas from './components/canvas/Canvas';
 import TopMenu from './components/menus/TopMenu';
 import ToolsPanel from './components/panels/ToolsPanel';
 import PropertiesPanel from './components/panels/PropertiesPanel';
-import ProjectManager from './components/project/ProjectManager';
+// Assicurati di aver creato la cartella src/context prima di usare questa importazione
 import { ProjectProvider } from './context/ProjectContext';
 
 function App() {
@@ -23,7 +23,6 @@ function App() {
     <ProjectProvider>
       <div className="App">
         <TopMenu />
-        <ProjectManager />
         <div className="main-container">
           <ToolsPanel onSelectTool={handleSelectTool} />
           <Canvas selectedTool={selectedTool} onSelectObject={handleSelectObject} />
