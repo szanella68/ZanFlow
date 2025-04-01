@@ -107,7 +107,7 @@ zanflow/
 
 ### 2. Setup del Database
 - Creare un database MySQL usando phpMyAdmin
-- Implementare le seguenti tabelle:
+- Database implementato con le seguenti tabelle:
 
 **Tabella Projects**
 ```sql
@@ -125,11 +125,13 @@ CREATE TABLE projects (
 CREATE TABLE nodes (
   id INT PRIMARY KEY AUTO_INCREMENT,
   project_id INT NOT NULL,
+  node_type ENUM('machine', 'transport', 'storage') NOT NULL,
   name VARCHAR(255) NOT NULL,
-  type ENUM('machine', 'transport', 'storage') NOT NULL,
   position_x FLOAT NOT NULL,
   position_y FLOAT NOT NULL,
   data JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 );
 ```
@@ -141,6 +143,8 @@ CREATE TABLE connections (
   project_id INT NOT NULL,
   start_node_id INT NOT NULL,
   end_node_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
   FOREIGN KEY (start_node_id) REFERENCES nodes(id) ON DELETE CASCADE,
   FOREIGN KEY (end_node_id) REFERENCES nodes(id) ON DELETE CASCADE
@@ -176,14 +180,29 @@ CREATE TABLE connections (
 - Costo di stoccaggio: costo per unità di tempo
 
 ### 4. Implementazione del Backend
-- Creare API RESTful con Express
-- Implementare le operazioni CRUD per progetti, nodi e connessioni
-- Aggiungere autenticazione utente (opzionale)
+- Backend Node.js/Express implementato con le seguenti API:
+  - `/api/projects` - GET, POST per gestire i progetti
+  - `/api/projects/:projectId/nodes` - GET per ottenere i nodi di un progetto
+  - `/api/nodes` - POST per creare un nuovo nodo
+  - `/api/projects/:projectId/connections` - GET per ottenere le connessioni di un progetto
+  - `/api/connections` - POST per creare una nuova connessione
 
-### 5. Funzionalità di Salvataggio/Caricamento
+### 5. Avvio Automatico dell'Ambiente di Sviluppo
+- Script batch `start_zanflow.bat` per automatizzare l'avvio dell'ambiente di sviluppo:
+  - Avvia XAMPP (MySQL e Apache)
+  - Avvia il server backend Node.js (porta 3002)
+  - Avvia il frontend React (porta 3001)
+
+### 6. Funzionalità di Salvataggio/Caricamento
 - Salvataggio automatico del lavoro
 - Esportazione in formati standard (PDF, PNG)
 - Condivisione dei progetti
 
+### 7. Integrazione Frontend-Backend
+- Implementare le chiamate API nel frontend React per:
+  - Salvare i nodi nel database quando vengono creati/modificati
+  - Caricare i progetti esistenti
+  - Gestire le connessioni tra nodi
+
 ## Stato Attuale
-Il progetto è nella fase iniziale di sviluppo. L'interfaccia di base è stata implementata, con la possibilità di creare nodi di tipo macchina, trasporto e magazzino nel canvas. Il prossimo passaggio prevede l'implementazione delle connessioni tra nodi e l'integrazione con il database.
+Il progetto ha un'interfaccia base funzionante con la possibilità di creare nodi di tipo macchina, trasporto e magazzino nel canvas. Il database e il backend sono stati configurati con le API necessarie per gestire progetti, nodi e connessioni. Il prossimo passo è integrare il frontend con il backend per permettere il salvataggio e il caricamento dei progetti.
