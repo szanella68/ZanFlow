@@ -95,7 +95,8 @@ const createStorage = (canvas, left, top) => {
     selectable: true,
     hasControls: true,
     hasBorders: true,
-    type: 'storage',
+    // Utilizziamo objectType invece di type per evitare conflitti con Fabric.js
+    objectType: 'storage',
     data: {
       name: 'Magazzino',
       cycleTime: 0,

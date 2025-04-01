@@ -166,14 +166,24 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
     }
   };
 
+  // Per mostrare visivamente all'utente che il canvas è pronto per il drag and drop
+  const canvasContainerClass = "canvas-container" + (selectedTool ? " canvas-container-ready" : "");
+
   return (
     <div 
-      className="canvas-container"
+      className={canvasContainerClass}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       data-tool={selectedTool}
     >
       <canvas ref={canvasRef} id="canvas" />
+      
+      {/* Aggiungiamo un messaggio di aiuto visibile solo quando non c'è un progetto selezionato */}
+      {!currentProject && (
+        <div className="canvas-message">
+          <p>Seleziona o crea un progetto dal menu File</p>
+        </div>
+      )}
     </div>
   );
 };

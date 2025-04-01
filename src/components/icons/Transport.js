@@ -89,7 +89,8 @@ const createTransport = (canvas, left, top) => {
     selectable: true,
     hasControls: true,
     hasBorders: true,
-    type: 'transport',
+    // Utilizziamo objectType invece di type per evitare conflitti con Fabric.js
+    objectType: 'transport',
     data: {
       name: 'Trasporto',
       cycleTime: 0,
