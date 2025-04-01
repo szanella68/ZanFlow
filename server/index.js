@@ -51,7 +51,7 @@ app.post('/api/projects', async (req, res) => {
       'INSERT INTO projects (name, description) VALUES (?, ?)',
       [name, description]
     );
-    res.status(201).json({ id: result.insertId, name, description });
+    res.status(201).json({ id: result.insertId, name, description, created_at: new Date(), updated_at: new Date() });
   } catch (error) {
     console.error('Error creating project', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -80,9 +80,68 @@ app.post('/api/nodes', async (req, res) => {
       'INSERT INTO nodes (project_id, node_type, name, position_x, position_y, data) VALUES (?, ?, ?, ?, ?, ?)',
       [project_id, node_type, name, position_x, position_y, JSON.stringify(data)]
     );
-    res.status(201).json({ id: result.insertId, ...req.body });
+    res.status(201).json({ 
+      id: result.insertId, 
+      project_id, 
+      node_type, 
+      name, 
+      position_x, 
+      position_y, 
+      data, 
+      created_at: new Date(), 
+      updated_at: new Date() 
+    });
   } catch (error) {
     console.error('Error creating node', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Aggiunto endpoint per aggiornare i nodi
+app.put('/api/nodes/:nodeId', async (req, res) => {
+  try {
+    const { nodeId } = req.params;
+    const { name, position_x, position_y, data } = req.body;
+    
+    // Aggiorna solo i campi forniti
+    let query = 'UPDATE nodes SET updated_at = NOW()';
+    const params = [];
+    
+    if (name !== undefined) {
+      query += ', name = ?';
+      params.push(name);
+    }
+    
+    if (position_x !== undefined) {
+      query += ', position_x = ?';
+      params.push(position_x);
+    }
+    
+    if (position_y !== undefined) {
+      query += ', position_y = ?';
+      params.push(position_y);
+    }
+    
+    if (data !== undefined) {
+      query += ', data = ?';
+      params.push(JSON.stringify(data));
+    }
+    
+    query += ' WHERE id = ?';
+    params.push(nodeId);
+    
+    const [result] = await pool.query(query, params);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Node not found' });
+    }
+    
+    // Recupera il nodo aggiornato
+    const [updatedNode] = await pool.query('SELECT * FROM nodes WHERE id = ?', [nodeId]);
+    
+    res.json(updatedNode[0]);
+  } catch (error) {
+    console.error('Error updating node', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -44,6 +44,20 @@ export const createNode = async (nodeData) => {
   return await response.json();
 };
 
+export const updateNode = async (nodeId, nodeData) => {
+  const response = await fetch(`${API_URL}/nodes/${nodeId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(nodeData),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update node');
+  }
+  return await response.json();
+};
+
 export const fetchConnections = async (projectId) => {
   const response = await fetch(`${API_URL}/projects/${projectId}/connections`);
   if (!response.ok) {

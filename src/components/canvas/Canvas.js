@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Canvas as FabricCanvas, Rect } from 'fabric';
 import IconFactory from '../icons/IconFactory';
+import { useProject } from '../../context/ProjectContext';
 import './Canvas.css';
 
-const Canvas = () => {
+const Canvas = ({ selectedTool, onSelectObject }) => {
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
-  const [selectedObject, setSelectedObject] = useState(null);
-
+  const { currentProject, addNode } = useProject();
+  
   useEffect(() => {
     // Inizializza il canvas quando il componente viene montato
     fabricCanvasRef.current = new FabricCanvas(canvasRef.current, {
@@ -32,15 +33,19 @@ const Canvas = () => {
 
     // Gestisce la selezione di oggetti nel canvas
     fabricCanvasRef.current.on('selection:created', (e) => {
-      setSelectedObject(e.selected[0]);
+      if (e.selected && e.selected.length > 0) {
+        onSelectObject(e.selected[0]);
+      }
     });
 
     fabricCanvasRef.current.on('selection:updated', (e) => {
-      setSelectedObject(e.selected[0]);
+      if (e.selected && e.selected.length > 0) {
+        onSelectObject(e.selected[0]);
+      }
     });
 
     fabricCanvasRef.current.on('selection:cleared', () => {
-      setSelectedObject(null);
+      onSelectObject(null);
     });
 
     // Funzione di pulizia
@@ -48,21 +53,7 @@ const Canvas = () => {
       window.removeEventListener('resize', resizeCanvas);
       fabricCanvasRef.current.dispose();
     };
-  }, []);
-
-  // Funzione per aggiungere un rettangolo (esempio)
-  const addRectangle = () => {
-    const rect = new Rect({
-      left: 100,
-      top: 100,
-      fill: '#deeaee',
-      width: 100,
-      height: 50,
-      stroke: '#2b7a78',
-      strokeWidth: 2,
-    });
-    fabricCanvasRef.current.add(rect);
-  };
+  }, [onSelectObject]);
 
   // Gestisce il drag over sul canvas
   const handleDragOver = (e) => {
@@ -71,8 +62,14 @@ const Canvas = () => {
   };
 
   // Gestisce il drop sul canvas
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
+    
+    // Se non c'è un progetto selezionato, mostra un messaggio di errore
+    if (!currentProject) {
+      alert('Seleziona o crea un progetto prima di aggiungere elementi');
+      return;
+    }
     
     // Recupera il tipo di strumento trascinato
     const toolType = e.dataTransfer.getData('toolType');
@@ -83,26 +80,90 @@ const Canvas = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
+    // Dati di base per ogni tipo di nodo
+    const baseNodeData = {
+      name: toolType.charAt(0).toUpperCase() + toolType.slice(1),
+      cycleTime: 0,
+      piecesPerHour: 0,
+      operators: 0,
+      rejectRate: 0
+    };
+    
     // Crea l'oggetto appropriato in base al tipo di strumento
-    // Nella funzione handleDrop, modifica lo switch per gestire anche i nuovi tipi:
-// Nella funzione handleDrop:
-switch (toolType) {
-  case 'machine':
-    IconFactory.createMachine(fabricCanvasRef.current, x, y);
-    break;
-  case 'transport':
-    IconFactory.createTransport(fabricCanvasRef.current, x, y);
-    break;
-  case 'storage':
-    IconFactory.createStorage(fabricCanvasRef.current, x, y);
-    break;
-  case 'connection':
-    // La connessione verrà implementata successivamente
-    console.log('Connessione selezionata, seleziona due nodi da collegare');
-    break;
-  default:
-    console.log('Tipo di strumento non riconosciuto:', toolType);
-}
+    let fabricObject = null;
+    let nodeData = { ...baseNodeData };
+    
+    switch (toolType) {
+      case 'machine':
+        nodeData = {
+          ...nodeData,
+          throughputTime: 0,
+          supplier: 'interno',
+          hourlyCost: 0,
+          availability: 100
+        };
+        fabricObject = IconFactory.createMachine(fabricCanvasRef.current, x, y);
+        break;
+        
+      case 'transport':
+        nodeData = {
+          ...nodeData,
+          transportType: 'manuale',
+          throughputTime: 0,
+          distance: 0,
+          minBatch: 1
+        };
+        fabricObject = IconFactory.createTransport(fabricCanvasRef.current, x, y);
+        break;
+        
+      case 'storage':
+        nodeData = {
+          ...nodeData,
+          capacity: 0,
+          averageStayTime: 0,
+          managementMethod: 'FIFO',
+          storageCost: 0
+        };
+        fabricObject = IconFactory.createStorage(fabricCanvasRef.current, x, y);
+        break;
+        
+      case 'connection':
+        // La connessione verrà implementata successivamente
+        console.log('Connessione selezionata, seleziona due nodi da collegare');
+        return;
+        
+      default:
+        console.log('Tipo di strumento non riconosciuto:', toolType);
+        return;
+    }
+    
+    // Prepara i dati per il salvataggio nel database
+    const nodeForDb = {
+      project_id: currentProject.id,
+      node_type: toolType,
+      name: nodeData.name,
+      position_x: x,
+      position_y: y,
+      data: nodeData
+    };
+    
+    try {
+      // Salva il nodo nel database
+      const savedNode = await addNode(nodeForDb);
+      
+      // Se il salvataggio ha successo, associa l'ID del database all'oggetto fabric
+      if (savedNode && fabricObject) {
+        fabricObject.set('dbId', savedNode.id);
+        fabricCanvasRef.current.renderAll();
+      }
+      
+      // Seleziona l'oggetto appena creato per mostrarne le proprietà
+      fabricCanvasRef.current.setActiveObject(fabricObject);
+      onSelectObject(fabricObject);
+    } catch (error) {
+      console.error('Errore nel salvataggio del nodo:', error);
+      alert('Errore nel salvataggio dell\'elemento. Riprova.');
+    }
   };
 
   return (
@@ -110,9 +171,9 @@ switch (toolType) {
       className="canvas-container"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      data-tool={selectedTool}
     >
       <canvas ref={canvasRef} id="canvas" />
-      <button onClick={addRectangle} className="test-button">Add Rectangle</button>
     </div>
   );
 };
