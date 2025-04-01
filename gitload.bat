@@ -20,7 +20,7 @@ git commit -m "%commit_msg%"
 
 echo.
 echo Carico su GitHub...
-git push origin master
+git push origin main
 
 echo.
 echo ===== CARICAMENTO COMPLETATO =====
