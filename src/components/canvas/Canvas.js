@@ -7,11 +7,14 @@ import './Canvas.css';
 const Canvas = ({ selectedTool, onSelectObject }) => {
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
+  const canvasInitializedRef = useRef(false);
   const { currentProject, addNode, setCanvasRef } = useProject();
   
   useEffect(() => {
     // Inizializza il canvas solo una volta quando il componente viene montato
-    if (!fabricCanvasRef.current) {
+    if (!canvasInitializedRef.current && canvasRef.current) {
+      console.log('Inizializzazione canvas...');
+      
       fabricCanvasRef.current = new FabricCanvas(canvasRef.current, {
         width: window.innerWidth - 400, // Sottraiamo lo spazio per i pannelli laterali
         height: window.innerHeight - 60, // Sottraiamo lo spazio per il menu in alto
@@ -20,52 +23,57 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
         preserveObjectStacking: true,
       });
 
+      canvasInitializedRef.current = true;
+
       // Registra il riferimento del canvas nel contesto del progetto
-      // Usiamo setTimeout per assicurarci che non si crei un loop
-      setTimeout(() => {
-        if (setCanvasRef) {
-          console.log('Registrazione canvas nel context (una sola volta)');
-          setCanvasRef(fabricCanvasRef.current);
-        } else {
-          console.error('setCanvasRef non disponibile nel context');
+      if (setCanvasRef) {
+        console.log('Registrazione canvas nel context (una sola volta)');
+        setCanvasRef(fabricCanvasRef.current);
+      } else {
+        console.error('setCanvasRef non disponibile nel context');
+      }
+      
+      // Funzione per ridimensionare il canvas quando cambia la dimensione della finestra
+      const resizeCanvas = () => {
+        if (fabricCanvasRef.current) {
+          fabricCanvasRef.current.setDimensions({
+            width: window.innerWidth - 400,
+            height: window.innerHeight - 60,
+          });
+          fabricCanvasRef.current.renderAll();
         }
-      }, 0);
+      };
+
+      // Aggiungi l'event listener per il ridimensionamento
+      window.addEventListener('resize', resizeCanvas);
+
+      // Gestisce la selezione di oggetti nel canvas
+      if (fabricCanvasRef.current) {
+        fabricCanvasRef.current.on('selection:created', (e) => {
+          if (e.selected && e.selected.length > 0) {
+            onSelectObject(e.selected[0]);
+          }
+        });
+
+        fabricCanvasRef.current.on('selection:updated', (e) => {
+          if (e.selected && e.selected.length > 0) {
+            onSelectObject(e.selected[0]);
+          }
+        });
+
+        fabricCanvasRef.current.on('selection:cleared', () => {
+          onSelectObject(null);
+        });
+      }
+
+      // Funzione di pulizia
+      return () => {
+        window.removeEventListener('resize', resizeCanvas);
+        if (fabricCanvasRef.current) {
+          fabricCanvasRef.current.dispose();
+        }
+      };
     }
-
-    // Funzione per ridimensionare il canvas quando cambia la dimensione della finestra
-    const resizeCanvas = () => {
-      fabricCanvasRef.current.setDimensions({
-        width: window.innerWidth - 400,
-        height: window.innerHeight - 60,
-      });
-      fabricCanvasRef.current.renderAll();
-    };
-
-    // Aggiungi l'event listener per il ridimensionamento
-    window.addEventListener('resize', resizeCanvas);
-
-    // Gestisce la selezione di oggetti nel canvas
-    fabricCanvasRef.current.on('selection:created', (e) => {
-      if (e.selected && e.selected.length > 0) {
-        onSelectObject(e.selected[0]);
-      }
-    });
-
-    fabricCanvasRef.current.on('selection:updated', (e) => {
-      if (e.selected && e.selected.length > 0) {
-        onSelectObject(e.selected[0]);
-      }
-    });
-
-    fabricCanvasRef.current.on('selection:cleared', () => {
-      onSelectObject(null);
-    });
-
-    // Funzione di pulizia
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      fabricCanvasRef.current.dispose();
-    };
   }, [onSelectObject, setCanvasRef]);
 
   // Gestisce il drag over sul canvas
@@ -78,10 +86,16 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
   const handleDrop = async (e) => {
     e.preventDefault();
     
-    // Se non c'è un progetto selezionato, mostra un messaggio di errore
+    // Se non c'è un progetto selezionato o il canvas non è inizializzato, mostra un messaggio di errore
     if (!currentProject) {
       console.log('Progetto corrente non disponibile:', currentProject);
       alert('Seleziona o crea un progetto prima di aggiungere elementi');
+      return;
+    }
+    
+    if (!fabricCanvasRef.current) {
+      console.log('Canvas non inizializzato correttamente');
+      alert('Errore nell\'inizializzazione del canvas. Ricarica la pagina.');
       return;
     }
     
@@ -92,6 +106,11 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
     
     // Calcola la posizione del drop considerando lo scroll e l'offset del canvas
     const canvasEl = fabricCanvasRef.current.getElement();
+    if (!canvasEl) {
+      console.error('Elemento canvas non disponibile');
+      return;
+    }
+    
     const rect = canvasEl.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;

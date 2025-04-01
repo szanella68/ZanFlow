@@ -1,5 +1,5 @@
 // src/context/ProjectContext.js
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { fetchProjects, createProject, fetchNodes, createNode, updateNode as apiUpdateNode } from '../services/api';
 import IconFactory from '../components/icons/IconFactory';
 
@@ -46,8 +46,12 @@ export const ProjectProvider = ({ children }) => {
       // Pulisci il canvas se esiste
       if (fabricCanvasRef.current) {
         console.log('Pulizia canvas per nuovo progetto');
-        fabricCanvasRef.current.clear();
-        fabricCanvasRef.current.renderAll();
+        try {
+          fabricCanvasRef.current.clear();
+          fabricCanvasRef.current.renderAll();
+        } catch (err) {
+          console.error('Errore durante la pulizia del canvas:', err);
+        }
       } else {
         console.log('Canvas non disponibile durante la creazione del progetto');
       }
@@ -78,8 +82,19 @@ export const ProjectProvider = ({ children }) => {
       
       // Initialize canvas with nodes if available
       if (fabricCanvasRef.current) {
-        // Utilizziamo la nuova funzione di IconFactory
-        IconFactory.initializeCanvasWithNodes(fabricCanvasRef.current, projectNodes);
+        try {
+          console.log('Inizializzazione canvas con nodi del progetto');
+          // Verifica che il canvas sia completamente inizializzato
+          if (typeof fabricCanvasRef.current.clear === 'function' && 
+              typeof fabricCanvasRef.current.renderAll === 'function') {
+            // Utilizziamo la nuova funzione di IconFactory
+            IconFactory.initializeCanvasWithNodes(fabricCanvasRef.current, projectNodes);
+          } else {
+            console.error('Canvas non completamente inizializzato:', fabricCanvasRef.current);
+          }
+        } catch (error) {
+          console.error('Errore durante l\'inizializzazione del canvas con i nodi:', error);
+        }
       } else {
         console.log('Canvas non disponibile durante il caricamento del progetto');
       }
