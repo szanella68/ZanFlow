@@ -69,24 +69,25 @@ const createMachine = (canvas, left, top) => {
     top: 15
   });
 
-  // Crea gruppo
-  const group = new Group([rect, gear, inputPoint, outputPoint, textBg, textbox], {
-    left: left,
-    top: top,
-    selectable: true,
-    hasControls: true,
-    hasBorders: true,
-    type: 'machine',
-    // Manteniamo anche objectType per compatibilità
-    objectType: 'machine',
-    data: {
-      name: 'Macchina',
-      cycleTime: 0,
-      piecesPerHour: 0,
-      operators: 0,
-      rejectRate: 0
-    }
-  });
+ // Crea gruppo
+const group = new Group([rect, gear, inputPoint, outputPoint, textBg, textbox], {
+  left: left,
+  top: top,
+  selectable: true,
+  hasControls: true,
+  hasBorders: true,
+  // RIMUOVI QUESTA RIGA ↓
+  type: 'machine',
+  // MANTIENI SOLO QUESTA ↓
+  objectType: 'machine',
+  data: {
+    name: 'Macchina',
+    cycleTime: 0,
+    piecesPerHour: 0,
+    operators: 0,
+    rejectRate: 0
+  }
+});
 
   canvas.add(group);
   canvas.renderAll();

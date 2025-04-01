@@ -42,7 +42,7 @@ const PropertiesPanel = ({ selectedObject }) => {
       
       // Aggiorna i campi comuni
       setProperties({
-        name: objectData.name || selectedObject.type || '',
+        name: objectData.name || selectedObject.objectType || '',
         cycleTime: objectData.cycleTime || 0,
         piecesPerHour: objectData.piecesPerHour || 0,
         operators: objectData.operators || 0,
@@ -50,7 +50,7 @@ const PropertiesPanel = ({ selectedObject }) => {
       });
       
       // Aggiorna i campi specifici in base al tipo
-      switch (selectedObject.type) {
+      switch (selectedObject.objectType) {
         case 'machine':
           setMachineProperties({
             throughputTime: objectData.throughputTime || 0,
@@ -124,7 +124,7 @@ const PropertiesPanel = ({ selectedObject }) => {
     // Unisci i dati comuni con quelli specifici del tipo
     let updatedData = { ...properties };
     
-    switch (selectedObject.type) {
+    switch (selectedObject.objectType) {
       case 'machine':
         updatedData = { ...updatedData, ...machineProperties };
         break;
@@ -171,7 +171,7 @@ const PropertiesPanel = ({ selectedObject }) => {
 
   return (
     <div className="panel properties-panel">
-      <h3>Proprietà {selectedObject.type}</h3>
+      <h3>Proprietà {selectedObject.objectType}</h3>
       
       {/* Campi comuni per tutti i tipi */}
       <div className="property-group">
@@ -228,7 +228,7 @@ const PropertiesPanel = ({ selectedObject }) => {
       </div>
       
       {/* Campi specifici per tipo di oggetto */}
-      {selectedObject.type === 'machine' && (
+      {selectedObject.objectType === 'machine' && (
         <>
           <div className="property-group">
             <label>Tempo attraversamento (s):</label>
@@ -278,7 +278,7 @@ const PropertiesPanel = ({ selectedObject }) => {
         </>
       )}
       
-      {selectedObject.type === 'transport' && (
+      {selectedObject.objectType === 'transport' && (
         <>
           <div className="property-group">
             <label>Tipo trasporto:</label>
@@ -327,7 +327,7 @@ const PropertiesPanel = ({ selectedObject }) => {
         </>
       )}
       
-      {selectedObject.type === 'storage' && (
+      {selectedObject.objectType === 'storage' && (
         <>
           <div className="property-group">
             <label>Capacità:</label>
