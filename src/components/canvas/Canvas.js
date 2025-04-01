@@ -103,6 +103,8 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
           availability: 100
         };
         fabricObject = IconFactory.createMachine(fabricCanvasRef.current, x, y);
+        console.log('Oggetto creato:', fabricObject);
+        console.log('Canvas riferimento:', fabricCanvasRef.current);
         break;
         
       case 'transport':

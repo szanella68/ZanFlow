@@ -76,7 +76,8 @@ const createMachine = (canvas, left, top) => {
     selectable: true,
     hasControls: true,
     hasBorders: true,
-    // Utilizziamo objectType invece di type per evitare conflitti con Fabric.js
+    type: 'machine',
+    // Manteniamo anche objectType per compatibilità
     objectType: 'machine',
     data: {
       name: 'Macchina',
