@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './TopMenu.css';
 import { useProject } from '../../context/ProjectContext';
 
@@ -8,13 +8,26 @@ const TopMenu = () => {
     loadProjects, 
     selectProject, 
     projects, 
-    currentProject 
+    currentProject,
+    loading
   } = useProject();
   
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showOpenDialog, setShowOpenDialog] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
+
+  // Carica i progetti all'avvio del componente
+  useEffect(() => {
+    // Utilizziamo questa sintassi per evitare il loop infinito
+    // Non includiamo loadProjects nella lista di dipendenze
+    const loadInitialProjects = async () => {
+      await loadProjects();
+    };
+    
+    loadInitialProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Gestisce la creazione di un nuovo progetto
   const handleNewProject = () => {
@@ -26,7 +39,11 @@ const TopMenu = () => {
   const handleOpenProject = () => {
     setShowOpenDialog(true);
     setShowNewDialog(false);
-    loadProjects(); // Ricarica l'elenco dei progetti
+    
+    // Ricarica l'elenco dei progetti solo se non stiamo già caricando
+    if (!loading) {
+      loadProjects();
+    }
   };
 
   // Gestisce il salvataggio del progetto corrente
@@ -40,12 +57,14 @@ const TopMenu = () => {
   };
 
   // Conferma la creazione di un nuovo progetto
-  const confirmNewProject = () => {
+  const confirmNewProject = async () => {
     if (newProjectName.trim()) {
-      addProject(newProjectName, newProjectDescription);
-      setShowNewDialog(false);
-      setNewProjectName('');
-      setNewProjectDescription('');
+      const success = await addProject(newProjectName, newProjectDescription);
+      if (success) {
+        setShowNewDialog(false);
+        setNewProjectName('');
+        setNewProjectDescription('');
+      }
     } else {
       alert('Inserisci un nome per il progetto.');
     }
@@ -85,7 +104,9 @@ const TopMenu = () => {
           <button>Adatta alla finestra</button>
         </div>
       </div>
-      <div className="app-title">ZanFlow</div>
+      <div className="app-title">
+        ZanFlow {currentProject ? `- ${currentProject.name}` : ''}
+      </div>
 
       {/* Dialogo per il nuovo progetto */}
       {showNewDialog && (
@@ -111,8 +132,12 @@ const TopMenu = () => {
               />
             </div>
             <div className="dialog-buttons">
-              <button onClick={confirmNewProject}>Crea</button>
-              <button onClick={() => setShowNewDialog(false)}>Annulla</button>
+              <button onClick={confirmNewProject} disabled={loading}>
+                {loading ? 'Creazione...' : 'Crea'}
+              </button>
+              <button onClick={() => setShowNewDialog(false)} disabled={loading}>
+                Annulla
+              </button>
             </div>
           </div>
         </div>
@@ -123,7 +148,9 @@ const TopMenu = () => {
         <div className="dialog-overlay">
           <div className="dialog">
             <h3>Apri Progetto</h3>
-            {projects.length === 0 ? (
+            {loading ? (
+              <p>Caricamento progetti in corso...</p>
+            ) : projects.length === 0 ? (
               <p>Nessun progetto disponibile.</p>
             ) : (
               <ul className="projects-list">
@@ -142,7 +169,9 @@ const TopMenu = () => {
               </ul>
             )}
             <div className="dialog-buttons">
-              <button onClick={() => setShowOpenDialog(false)}>Chiudi</button>
+              <button onClick={() => setShowOpenDialog(false)} disabled={loading}>
+                Chiudi
+              </button>
             </div>
           </div>
         </div>

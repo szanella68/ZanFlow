@@ -1,7 +1,7 @@
 // src/context/ProjectContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { fetchProjects, createProject, fetchNodes, createNode, updateNode as apiUpdateNode } from '../services/api';
-import { initializeCanvasWithMachines } from '../components/icons/Machine';
+import IconFactory from '../components/icons/IconFactory';
 
 // Create the context
 const ProjectContext = createContext();
@@ -15,7 +15,9 @@ export const ProjectProvider = ({ children }) => {
   const [nodes, setNodes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [fabricCanvasRef, setFabricCanvasRef] = useState(null);
+  
+  // Utilizziamo useRef invece di useState per evitare re-render quando cambia il canvas
+  const fabricCanvasRef = useRef(null);
 
   // Load all projects
   const loadProjects = async () => {
@@ -37,15 +39,25 @@ export const ProjectProvider = ({ children }) => {
     setLoading(true);
     try {
       const newProject = await createProject({ name, description });
-      setProjects([...projects, newProject]);
+      setProjects(prevProjects => [...prevProjects, newProject]);
       setCurrentProject(newProject);
       setNodes([]);
+      
+      // Pulisci il canvas se esiste
+      if (fabricCanvasRef.current) {
+        console.log('Pulizia canvas per nuovo progetto');
+        fabricCanvasRef.current.clear();
+        fabricCanvasRef.current.renderAll();
+      } else {
+        console.log('Canvas non disponibile durante la creazione del progetto');
+      }
+      
       setError(null);
-      return newProject;
+      return true;
     } catch (err) {
       setError('Errore nella creazione del progetto');
       console.error(err);
-      return null;
+      return false;
     } finally {
       setLoading(false);
     }
@@ -65,8 +77,11 @@ export const ProjectProvider = ({ children }) => {
       setNodes(projectNodes);
       
       // Initialize canvas with nodes if available
-      if (fabricCanvasRef && fabricCanvasRef.current) {
-        initializeCanvasWithMachines(fabricCanvasRef.current, projectNodes);
+      if (fabricCanvasRef.current) {
+        // Utilizziamo la nuova funzione di IconFactory
+        IconFactory.initializeCanvasWithNodes(fabricCanvasRef.current, projectNodes);
+      } else {
+        console.log('Canvas non disponibile durante il caricamento del progetto');
       }
       
       setError(null);
@@ -135,7 +150,14 @@ export const ProjectProvider = ({ children }) => {
 
   // Set canvas reference
   const setCanvasRef = (canvasRef) => {
-    setFabricCanvasRef(canvasRef);
+    // Poiché usiamo useRef, possiamo aggiornare il valore direttamente
+    // senza causare re-render
+    if (!fabricCanvasRef.current) {
+      console.log('Impostazione iniziale del canvas reference');
+      fabricCanvasRef.current = canvasRef;
+    } else {
+      console.log('Canvas reference già impostato, nessun aggiornamento necessario');
+    }
   };
 
   // Load projects on startup

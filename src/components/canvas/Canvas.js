@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Canvas as FabricCanvas, Rect } from 'fabric';
+import { Canvas as FabricCanvas } from 'fabric';
 import IconFactory from '../icons/IconFactory';
 import { useProject } from '../../context/ProjectContext';
 import './Canvas.css';
@@ -10,18 +10,26 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
   const { currentProject, addNode, setCanvasRef } = useProject();
   
   useEffect(() => {
-    // Inizializza il canvas quando il componente viene montato
-    fabricCanvasRef.current = new FabricCanvas(canvasRef.current, {
-      width: window.innerWidth - 400, // Sottraiamo lo spazio per i pannelli laterali
-      height: window.innerHeight - 60, // Sottraiamo lo spazio per il menu in alto
-      backgroundColor: '#f5f5f5',
-      selection: true,
-      preserveObjectStacking: true,
-    });
+    // Inizializza il canvas solo una volta quando il componente viene montato
+    if (!fabricCanvasRef.current) {
+      fabricCanvasRef.current = new FabricCanvas(canvasRef.current, {
+        width: window.innerWidth - 400, // Sottraiamo lo spazio per i pannelli laterali
+        height: window.innerHeight - 60, // Sottraiamo lo spazio per il menu in alto
+        backgroundColor: '#f5f5f5',
+        selection: true,
+        preserveObjectStacking: true,
+      });
 
-    // Registra il riferimento del canvas nel contesto del progetto
-    if (setCanvasRef) {
-      setCanvasRef(fabricCanvasRef.current);
+      // Registra il riferimento del canvas nel contesto del progetto
+      // Usiamo setTimeout per assicurarci che non si crei un loop
+      setTimeout(() => {
+        if (setCanvasRef) {
+          console.log('Registrazione canvas nel context (una sola volta)');
+          setCanvasRef(fabricCanvasRef.current);
+        } else {
+          console.error('setCanvasRef non disponibile nel context');
+        }
+      }, 0);
     }
 
     // Funzione per ridimensionare il canvas quando cambia la dimensione della finestra
@@ -72,9 +80,12 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
     
     // Se non c'è un progetto selezionato, mostra un messaggio di errore
     if (!currentProject) {
+      console.log('Progetto corrente non disponibile:', currentProject);
       alert('Seleziona o crea un progetto prima di aggiungere elementi');
       return;
     }
+    
+    console.log('Drop avvenuto con progetto corrente:', currentProject.name);
     
     // Recupera il tipo di strumento trascinato
     const toolType = e.dataTransfer.getData('toolType');
@@ -108,8 +119,6 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
           availability: 100
         };
         fabricObject = IconFactory.createMachine(fabricCanvasRef.current, x, y);
-        console.log('Oggetto creato:', fabricObject);
-        console.log('Canvas riferimento:', fabricCanvasRef.current);
         break;
         
       case 'transport':
@@ -175,8 +184,6 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
 
   // Per mostrare visivamente all'utente che il canvas è pronto per il drag and drop
   const canvasContainerClass = "canvas-container" + (selectedTool ? " canvas-container-ready" : "");
-
-  console.log('Canvas received selectedTool:', selectedTool); // Debug log
 
   return (
     <div 
