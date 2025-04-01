@@ -1,0 +1,72 @@
+.panel {
+  width: 200px;
+  background: #def2f1;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.tools-panel {
+  border-right: 1px solid #ccc;
+}
+
+.properties-panel {
+  border-left: 1px solid #ccc;
+}
+
+h3 {
+  margin-top: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #3aafa9;
+  color: #17252a;
+}
+
+.tool-item {
+  margin-bottom: 10px;
+}
+
+.tool-button {
+  width: 100%;
+  padding: 8px;
+  background: #3aafa9;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tool-button:hover {
+  background: #2b7a78;
+}
+
+.property-group {
+  margin-bottom: 10px;
+}
+
+.property-group label {
+  display: block;
+  margin-bottom: 3px;
+  font-weight: bold;
+  color: #17252a;
+}
+
+.property-group input {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.apply-button {
+  width: 100%;
+  padding: 8px;
+  background: #3aafa9;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.apply-button:hover {
+  background: #2b7a78;
+}

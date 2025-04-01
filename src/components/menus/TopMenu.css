@@ -1,0 +1,55 @@
+.top-menu {
+  height: 40px;
+  background: #17252a;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  color: white;
+  position: relative;
+}
+
+.menu-item {
+  position: relative;
+  margin-right: 20px;
+  cursor: pointer;
+  padding: 10px;
+}
+
+.menu-item:hover {
+  background: #2b7a78;
+}
+
+.menu-item:hover .dropdown-content {
+  display: block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  top: 40px;
+  left: 0;
+  background: white;
+  min-width: 150px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.dropdown-content button {
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #17252a;
+  cursor: pointer;
+}
+
+.dropdown-content button:hover {
+  background: #def2f1;
+}
+
+.app-title {
+  margin-left: auto;
+  font-weight: bold;
+  font-size: 18px;
+}

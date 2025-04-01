@@ -1,0 +1,28 @@
+.canvas-container {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  border: 1px solid #ccc;
+  background-color: #f5f5f5;
+  cursor: default;
+}
+
+.canvas-container[data-tool] {
+  cursor: crosshair;
+}
+
+.test-button {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  padding: 8px 16px;
+  background: #17252a;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.test-button:hover {
+  background: #3aafa9;
+}

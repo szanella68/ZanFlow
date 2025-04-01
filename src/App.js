@@ -1,23 +1,30 @@
-import logo from './logo.svg';
+import React, { useState } from 'react';
 import './App.css';
+import Canvas from './components/canvas/Canvas';
+import TopMenu from './components/menus/TopMenu';
+import ToolsPanel from './components/panels/ToolsPanel';
+import PropertiesPanel from './components/panels/PropertiesPanel';
 
 function App() {
+  const [selectedTool, setSelectedTool] = useState(null);
+  const [selectedObject, setSelectedObject] = useState(null);
+
+  const handleSelectTool = (toolType) => {
+    setSelectedTool(toolType);
+  };
+
+  const handleSelectObject = (object) => {
+    setSelectedObject(object);
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <TopMenu />
+      <div className="main-container">
+        <ToolsPanel onSelectTool={handleSelectTool} />
+        <Canvas selectedTool={selectedTool} onSelectObject={handleSelectObject} />
+        <PropertiesPanel selectedObject={selectedObject} />
+      </div>
     </div>
   );
 }
