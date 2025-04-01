@@ -7,7 +7,7 @@ import './Canvas.css';
 const Canvas = ({ selectedTool, onSelectObject }) => {
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
-  const { currentProject, addNode } = useProject();
+  const { currentProject, addNode, setCanvasRef } = useProject();
   
   useEffect(() => {
     // Inizializza il canvas quando il componente viene montato
@@ -18,6 +18,11 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
       selection: true,
       preserveObjectStacking: true,
     });
+
+    // Registra il riferimento del canvas nel contesto del progetto
+    if (setCanvasRef) {
+      setCanvasRef(fabricCanvasRef.current);
+    }
 
     // Funzione per ridimensionare il canvas quando cambia la dimensione della finestra
     const resizeCanvas = () => {
@@ -53,7 +58,7 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
       window.removeEventListener('resize', resizeCanvas);
       fabricCanvasRef.current.dispose();
     };
-  }, [onSelectObject]);
+  }, [onSelectObject, setCanvasRef]);
 
   // Gestisce il drag over sul canvas
   const handleDragOver = (e) => {
@@ -170,6 +175,8 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
 
   // Per mostrare visivamente all'utente che il canvas è pronto per il drag and drop
   const canvasContainerClass = "canvas-container" + (selectedTool ? " canvas-container-ready" : "");
+
+  console.log('Canvas received selectedTool:', selectedTool); // Debug log
 
   return (
     <div 

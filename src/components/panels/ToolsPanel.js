@@ -6,6 +6,11 @@ const ToolsPanel = ({ onSelectTool }) => {
     event.dataTransfer.setData('toolType', toolType);
   };
 
+  const handleToolClick = (toolType) => {
+    console.log('Tool clicked:', toolType); // Debug log
+    onSelectTool(toolType);
+  };
+
   return (
     <div className="panel tools-panel">
       <h3>Strumenti</h3>
@@ -14,7 +19,7 @@ const ToolsPanel = ({ onSelectTool }) => {
           className="tool-button" 
           draggable 
           onDragStart={(e) => handleDragStart(e, 'machine')}
-          onClick={() => onSelectTool('machine')}
+          onClick={() => handleToolClick('machine')}
         >
           Macchina
         </button>
@@ -24,7 +29,7 @@ const ToolsPanel = ({ onSelectTool }) => {
           className="tool-button" 
           draggable 
           onDragStart={(e) => handleDragStart(e, 'transport')}
-          onClick={() => onSelectTool('transport')}
+          onClick={() => handleToolClick('transport')}
         >
           Trasporto
         </button>
@@ -34,7 +39,7 @@ const ToolsPanel = ({ onSelectTool }) => {
           className="tool-button" 
           draggable 
           onDragStart={(e) => handleDragStart(e, 'storage')}
-          onClick={() => onSelectTool('storage')}
+          onClick={() => handleToolClick('storage')}
         >
           Magazzino
         </button>
@@ -44,7 +49,7 @@ const ToolsPanel = ({ onSelectTool }) => {
           className="tool-button" 
           draggable 
           onDragStart={(e) => handleDragStart(e, 'connection')}
-          onClick={() => onSelectTool('connection')}
+          onClick={() => handleToolClick('connection')}
         >
           Connessione
         </button>

@@ -1,149 +1,162 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { fetchProjects, createProject, fetchNodes, createNode, updateNode as apiUpdateNode } from '../services/api';
-
+import { initializeCanvasWithMachines } from '../components/icons/Machine';
 // Creo il context
 const ProjectContext = createContext();
-
+const ProjectContext = createContext();
 // Hook custom per usare il context
 export const useProject = () => useContext(ProjectContext);
-
+export const useProject = () => useContext(ProjectContext);
 export const ProjectProvider = ({ children }) => {
-  const [projects, setProjects] = useState([]);
+  const [projects, setProjects] = useState([]);> {
   const [currentProject, setCurrentProject] = useState(null);
-  const [nodes, setNodes] = useState([]);
+  const [nodes, setNodes] = useState([]);t] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null);lse);
+  const [fabricCanvasRef, setFabricCanvasRef] = useState(null);  const [error, setError] = useState(null);
 
   // Carica tutti i progetti
-  const loadProjects = async () => {
-    setLoading(true);
+  const loadProjects = async () => {= async () => {
+    setLoading(true);ading(true);
     try {
-      const data = await fetchProjects();
-      setProjects(data);
-      setError(null);
+      const data = await fetchProjects(); fetchProjects();
+      setProjects(data);a);
+      setError(null););
     } catch (err) {
-      setError('Errore nel caricamento dei progetti');
-      console.error(err);
+      setError('Errore nel caricamento dei progetti');l caricamento dei progetti');
+      console.error(err);rror(err);
     } finally {
-      setLoading(false);
-    }
-  };
+      setLoading(false); setLoading(false);
+    }}
+  };  };
 
   // Crea un nuovo progetto
-  const addProject = async (name, description) => {
-    setLoading(true);
+  const addProject = async (name, description) => {async (name, description) => {
+    setLoading(true);ading(true);
     try {
-      const newProject = await createProject({ name, description });
-      setProjects([...projects, newProject]);
-      setCurrentProject(newProject);
+      const newProject = await createProject({ name, description });{ name, description });
+      setProjects([...projects, newProject]);roject]);
+      setCurrentProject(newProject);ject(newProject);
       setNodes([]);
       setError(null);
-      return newProject;
+      return newProject;ject;
     } catch (err) {
-      setError('Errore nella creazione del progetto');
-      console.error(err);
-      return null;
+      setError('Errore nella creazione del progetto');lla creazione del progetto');
+      console.error(err);r(err);
+      return null;ll;
     } finally {
-      setLoading(false);
-    }
-  };
+      setLoading(false); setLoading(false);
+    }}
+  };  };
 
-  // Seleziona un progetto e carica i suoi nodi
-  const selectProject = async (projectId) => {
-    setLoading(true);
+  // Seleziona un progetto e carica i suoi nodii
+  const selectProject = async (projectId) => { = async (projectId) => {
+    setLoading(true);ading(true);
     try {
-      const selectedProject = projects.find(p => p.id === projectId);
-      if (!selectedProject) throw new Error('Progetto non trovato');
+      const selectedProject = projects.find(p => p.id === projectId);;
+      if (!selectedProject) throw new Error('Progetto non trovato');if (!selectedProject) throw new Error('Progetto non trovato');
       
-      setCurrentProject(selectedProject);
+      setCurrentProject(selectedProject);setCurrentProject(selectedProject);
       
       // Carica i nodi del progetto
-      const projectNodes = await fetchNodes(projectId);
-      setNodes(projectNodes);
+      const projectNodes = await fetchNodes(projectId);ait fetchNodes(projectId);
+      setNodes(projectNodes);tNodes);
       setError(null);
     } catch (err) {
-      setError('Errore nella selezione del progetto');
-      console.error(err);
+      setError('Errore nella selezione del progetto');.current) {
+      console.error(err);izeCanvasWithMachines(fabricCanvasRef.current, projectNodes);
     } finally {
       setLoading(false);
-    }
-  };
-
+    }  setError(null);
+  };    } catch (err) {
+ progetto');
   // Aggiunge un nodo al progetto corrente
   const addNode = async (nodeData) => {
-    if (!currentProject) {
-      setError('Nessun progetto selezionato');
-      return null;
+      setLoading(false);
+    }ssun progetto selezionato');
+  }; return null;
     }
-
-    setLoading(true);
+  // Aggiunge un nodo al progetto corrente
+  const addNode = async (nodeData) => {ading(true);
+    if (!currentProject) {
+      setError('Nessun progetto selezionato');ia associato al progetto corrente
+      return null;Project = {
+    }
+project_id: currentProject.id
+    setLoading(true);};
     try {
-      // Assicura che il nodo sia associato al progetto corrente
-      const nodeWithProject = {
+      // Assicura che il nodo sia associato al progetto correntede(nodeWithProject);
+      const nodeWithProject = {des, newNode]);
         ...nodeData,
-        project_id: currentProject.id
+        project_id: currentProject.ide;
       };
-      
-      const newNode = await createNode(nodeWithProject);
-      setNodes([...nodes, newNode]);
+      ll\'aggiunta del nodo');
+      const newNode = await createNode(nodeWithProject);r(err);
+      setNodes([...nodes, newNode]);ll;
       setError(null);
-      return newNode;
-    } catch (err) {
-      setError('Errore nell\'aggiunta del nodo');
+      return newNode; setLoading(false);
+    } catch (err) {}
+      setError('Errore nell\'aggiunta del nodo');  };
       console.error(err);
       return null;
-    } finally {
+    } finally { (nodeId, updatedData) => {
       setLoading(false);
+    }ssun progetto selezionato');
+  }; return null;
     }
-  };
-
   // Aggiorna un nodo esistente
-  const updateNode = async (nodeId, updatedData) => {
+  const updateNode = async (nodeId, updatedData) => {ading(true);
     if (!currentProject) {
-      setError('Nessun progetto selezionato');
+      setError('Nessun progetto selezionato');const updated = await apiUpdateNode(nodeId, updatedData);
       return null;
-    }
+    }i con il nodo modificato
 
-    setLoading(true);
-    try {
+    setLoading(true);ode.id === nodeId ? updated : node
+    try {));
       const updated = await apiUpdateNode(nodeId, updatedData);
       
-      // Aggiorna l'array dei nodi con il nodo modificato
+      // Aggiorna l'array dei nodi con il nodo modificatod;
       setNodes(nodes.map(node => 
-        node.id === nodeId ? updated : node
-      ));
-      
+        node.id === nodeId ? updated : nodell\'aggiornamento del nodo');
+      ));r(err);
+      ll;
       setError(null);
-      return updated;
-    } catch (err) {
-      setError('Errore nell\'aggiornamento del nodo');
+      return updated; setLoading(false);
+    } catch (err) {}
+      setError('Errore nell\'aggiornamento del nodo');  };
       console.error(err);
-      return null;
-    } finally {
-      setLoading(false);
+      return null;f = (canvasRef) => {
+    setFabricCanvasRef(canvasRef);
+  };Loading(false);
     }
-  };
-
   // Carica i progetti all'avvio
   useEffect(() => {
-    loadProjects();
-  }, []);
-
+    loadProjects();tti all'avvio
+  }, []);t(() => {
+ects();
   const value = {
     projects,
-    currentProject,
+    currentProject, {
     nodes,
-    loading,
+    loading,roject,
     error,
-    loadProjects,
-    addProject,
-    selectProject,
+    loadProjects,loading,
+    addProject,    error,
+    selectProject,ojects,
     addNode,
-    updateNode
-  };
-
+    updateNode,t,
+    setCanvasRef
+  };updateNode
+};
   return (
     <ProjectContext.Provider value={value}>
+
+
+
+
+
+
+export default ProjectContext;};  );    </ProjectContext.Provider>      {children}    <ProjectContext.Provider value={value}>
       {children}
     </ProjectContext.Provider>
   );

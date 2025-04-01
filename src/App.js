@@ -12,10 +12,12 @@ function App() {
   const [selectedObject, setSelectedObject] = useState(null);
 
   const handleSelectTool = (toolType) => {
+    console.log('Tool selected:', toolType); // Debug log
     setSelectedTool(toolType);
   };
 
   const handleSelectObject = (object) => {
+    console.log('Object selected:', object); // Debug log
     setSelectedObject(object);
   };
 
@@ -25,7 +27,10 @@ function App() {
         <TopMenu />
         <div className="main-container">
           <ToolsPanel onSelectTool={handleSelectTool} />
-          <Canvas selectedTool={selectedTool} onSelectObject={handleSelectObject} />
+          <Canvas 
+            selectedTool={selectedTool} 
+            onSelectObject={handleSelectObject} 
+          />
           <PropertiesPanel selectedObject={selectedObject} />
         </div>
       </div>

@@ -76,9 +76,6 @@ const group = new Group([rect, gear, inputPoint, outputPoint, textBg, textbox], 
   selectable: true,
   hasControls: true,
   hasBorders: true,
-  // RIMUOVI QUESTA RIGA ↓
-  type: 'machine',
-  // MANTIENI SOLO QUESTA ↓
   objectType: 'machine',
   data: {
     name: 'Macchina',
@@ -95,4 +92,17 @@ const group = new Group([rect, gear, inputPoint, outputPoint, textBg, textbox], 
   return group;
 };
 
-export default createMachine;
+const initializeCanvasWithMachines = (canvas, machines) => {
+  machines.forEach(machine => {
+    createMachine(canvas, machine.left, machine.top);
+  });
+};
+
+// Example usage: Call this function when a project is opened
+// initializeCanvasWithMachines(canvas, [
+//   { left: 100, top: 100 },
+//   { left: 300, top: 200 },
+//   { left: 500, top: 300 }
+// ]);
+
+export { createMachine, initializeCanvasWithMachines };

@@ -3,6 +3,7 @@ import './Panels.css';
 import { useProject } from '../../context/ProjectContext';
 
 const PropertiesPanel = ({ selectedObject }) => {
+  console.log('PropertiesPanel received selectedObject:', selectedObject); // Debug log
   const { updateNode } = useProject();
   const [properties, setProperties] = useState({
     name: '',
