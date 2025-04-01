@@ -15,7 +15,7 @@ const dbConfig = {
   host: 'localhost',
   user: 'root',  // Sostituisci con il tuo username
   password: '',  // Sostituisci con la tua password
-  database: 'zanflow_db'
+  database: 'zanflow'
 };
 
 // Pool di connessioni

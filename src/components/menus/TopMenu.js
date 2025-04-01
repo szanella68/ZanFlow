@@ -1,15 +1,70 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './TopMenu.css';
+import { useProject } from '../../context/ProjectContext';
 
 const TopMenu = () => {
+  const { 
+    addProject, 
+    loadProjects, 
+    selectProject, 
+    projects, 
+    currentProject 
+  } = useProject();
+  
+  const [showNewDialog, setShowNewDialog] = useState(false);
+  const [showOpenDialog, setShowOpenDialog] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDescription, setNewProjectDescription] = useState('');
+
+  // Gestisce la creazione di un nuovo progetto
+  const handleNewProject = () => {
+    setShowNewDialog(true);
+    setShowOpenDialog(false);
+  };
+
+  // Gestisce l'apertura della finestra di dialogo per aprire progetti
+  const handleOpenProject = () => {
+    setShowOpenDialog(true);
+    setShowNewDialog(false);
+    loadProjects(); // Ricarica l'elenco dei progetti
+  };
+
+  // Gestisce il salvataggio del progetto corrente
+  const handleSaveProject = () => {
+    // Per ora mostriamo solo un messaggio, in seguito implementeremo il salvataggio effettivo
+    if (currentProject) {
+      alert(`Progetto "${currentProject.name}" salvato con successo!`);
+    } else {
+      alert('Nessun progetto selezionato da salvare.');
+    }
+  };
+
+  // Conferma la creazione di un nuovo progetto
+  const confirmNewProject = () => {
+    if (newProjectName.trim()) {
+      addProject(newProjectName, newProjectDescription);
+      setShowNewDialog(false);
+      setNewProjectName('');
+      setNewProjectDescription('');
+    } else {
+      alert('Inserisci un nome per il progetto.');
+    }
+  };
+
+  // Seleziona un progetto dall'elenco
+  const handleSelectProject = (projectId) => {
+    selectProject(projectId);
+    setShowOpenDialog(false);
+  };
+
   return (
     <div className="top-menu">
       <div className="menu-item">
         <span>File</span>
         <div className="dropdown-content">
-          <button>Nuovo</button>
-          <button>Apri</button>
-          <button>Salva</button>
+          <button onClick={handleNewProject}>Nuovo</button>
+          <button onClick={handleOpenProject}>Apri</button>
+          <button onClick={handleSaveProject}>Salva</button>
           <button>Salva con nome</button>
         </div>
       </div>
@@ -31,6 +86,67 @@ const TopMenu = () => {
         </div>
       </div>
       <div className="app-title">ZanFlow</div>
+
+      {/* Dialogo per il nuovo progetto */}
+      {showNewDialog && (
+        <div className="dialog-overlay">
+          <div className="dialog">
+            <h3>Nuovo Progetto</h3>
+            <div className="form-group">
+              <label>Nome:</label>
+              <input 
+                type="text" 
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                placeholder="Inserisci nome progetto"
+              />
+            </div>
+            <div className="form-group">
+              <label>Descrizione:</label>
+              <textarea 
+                value={newProjectDescription}
+                onChange={(e) => setNewProjectDescription(e.target.value)}
+                placeholder="Inserisci descrizione (opzionale)"
+                rows="3"
+              />
+            </div>
+            <div className="dialog-buttons">
+              <button onClick={confirmNewProject}>Crea</button>
+              <button onClick={() => setShowNewDialog(false)}>Annulla</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dialogo per aprire un progetto */}
+      {showOpenDialog && (
+        <div className="dialog-overlay">
+          <div className="dialog">
+            <h3>Apri Progetto</h3>
+            {projects.length === 0 ? (
+              <p>Nessun progetto disponibile.</p>
+            ) : (
+              <ul className="projects-list">
+                {projects.map(project => (
+                  <li 
+                    key={project.id}
+                    onClick={() => handleSelectProject(project.id)}
+                    className={currentProject?.id === project.id ? 'selected' : ''}
+                  >
+                    <span>{project.name}</span>
+                    <span className="project-date">
+                      {new Date(project.created_at).toLocaleDateString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="dialog-buttons">
+              <button onClick={() => setShowOpenDialog(false)}>Chiudi</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
