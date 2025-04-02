@@ -65,11 +65,12 @@ export const createNodeFromData = (canvas, node) => {
         });
       }
 
-      // Verifica se l'oggetto ha un'icona associata
-      if (!fabricObject.icon) {
-        console.warn(`Icon missing for node type "${node_type}". Setting a default icon.`);
-        fabricObject.icon = 'default-icon.png'; // Imposta un'icona predefinita
-      }
+      // RIMOZIONE DEL CONTROLLO DELL'ICONA CHE GENERA L'AVVISO
+      // La seguente sezione è stata rimossa:
+      // if (!fabricObject.icon) {
+      //   console.warn(`Icon missing for node type "${node_type}". Setting a default icon.`);
+      //   fabricObject.icon = 'default-icon.png';
+      // }
     } else {
       console.warn('Node creation failed for:', node);
     }

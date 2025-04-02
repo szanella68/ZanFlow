@@ -30,10 +30,10 @@ export const ProjectProvider = ({ children }) => {
     }
   };
   
-  // Carica all'avvio
-  useEffect(() => {
-    loadProjects();
-  }, []);
+  // RIMOSSO L'USEEFFECT CHE CARICAVA I PROGETTI ALL'AVVIO
+  // useEffect(() => {
+  //   loadProjects();
+  // }, []);
   
   // Crea un nuovo progetto
   const addProject = async (name, description) => {

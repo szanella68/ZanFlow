@@ -1,9 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Canvas, Rect } from 'fabric';
 import './Canvas.css';
-import { createMachine } from '../icons/Machine';
-import createTransport from '../icons/Transport';
-import { createStorage } from '../icons/Storage';
 import NodeFactory from '../icons/NodeFactory';
 
 const CanvasManager = ({ 
@@ -44,7 +41,7 @@ const CanvasManager = ({
 
       console.log(`Dropped tool type: "${toolType}" at coordinates: (${x}, ${y})`);
 
-      let fabricObject;
+      // Creiamo i dati di base per il nodo
       const baseNodeData = {
         name: toolType.charAt(0).toUpperCase() + toolType.slice(1),
         cycleTime: 0,
@@ -55,6 +52,7 @@ const CanvasManager = ({
 
       let nodeData = { ...baseNodeData };
 
+      // Aggiungiamo i dati specifici per tipo
       switch (toolType) {
         case 'machine':
           nodeData = {
@@ -64,7 +62,6 @@ const CanvasManager = ({
             hourlyCost: 0,
             availability: 100
           };
-          fabricObject = createMachine(canvas, x, y);
           break;
         case 'transport':
           nodeData = {
@@ -74,7 +71,6 @@ const CanvasManager = ({
             distance: 0,
             minBatch: 1
           };
-          fabricObject = createTransport(canvas, x, y);
           break;
         case 'storage':
           nodeData = {
@@ -84,7 +80,6 @@ const CanvasManager = ({
             managementMethod: 'FIFO',
             storageCost: 0
           };
-          fabricObject = createStorage(canvas, x, y);
           break;
         case 'connection':
           console.log('Connessione selezionata, da implementare');
@@ -94,37 +89,45 @@ const CanvasManager = ({
           return;
       }
 
-      if (fabricObject) {
-        console.log('Fabric object created successfully:', fabricObject);
-        const nodeForDb = {
-          project_id: currentProject.id,
-          node_type: toolType,
-          name: nodeData.name,
-          position_x: x,
-          position_y: y,
-          data: nodeData
-        };
+      // Prepariamo i dati per il database
+      const nodeForDb = {
+        project_id: currentProject.id,
+        node_type: toolType,
+        name: nodeData.name,
+        position_x: x,
+        position_y: y,
+        data: nodeData
+      };
 
-        onNodeAdded(nodeForDb, (savedNode) => {
-          if (savedNode && savedNode.id) {
-            fabricObject.set('dbId', savedNode.id);
+      // Salviamo il nodo nel database
+      onNodeAdded(nodeForDb, (savedNode) => {
+        if (savedNode && savedNode.id) {
+          // Creiamo l'oggetto visual DOPO aver salvato nel database
+          const fabricObject = NodeFactory.createNodeFromData(canvas, {
+            ...savedNode,
+            position_x: x,
+            position_y: y
+          });
+          
+          if (fabricObject) {
             canvas.renderAll();
             canvas.setActiveObject(fabricObject);
             onNodeSelected(fabricObject);
+          } else {
+            console.error('Failed to create visual representation for node:', savedNode);
           }
-        });
-      } else {
-        console.warn('Failed to create fabric object for tool type:', toolType);
-      }
+        }
+      });
     } catch (error) {
       console.error('Error during drop handling:', error);
       alert('Si è verificato un errore durante l\'aggiunta dell\'elemento.');
     }
   };
 
+  // Inizializzazione del canvas
   useEffect(() => {
     if (canvasEl.current && !canvas) {
-      console.log('Initializing canvas...');
+      console.log('Inizializzazione canvas...');
       try {
         const fabricCanvas = new Canvas(canvasEl.current, {
           width: window.innerWidth - 400,
@@ -134,21 +137,7 @@ const CanvasManager = ({
           preserveObjectStacking: true
         });
 
-        setCanvas(fabricCanvas);
-        setIsCanvasReady(true);
-
-        const handleResize = () => {
-          if (fabricCanvas) {
-            fabricCanvas.setDimensions({
-              width: window.innerWidth - 400,
-              height: window.innerHeight - 60
-            });
-            fabricCanvas.renderAll();
-          }
-        };
-
-        window.addEventListener('resize', handleResize);
-
+        // Registriamo gli event listener per la selezione
         fabricCanvas.on('selection:created', (e) => {
           console.log('Selection created:', e.selected);
           if (e.selected && e.selected.length > 0) {
@@ -168,6 +157,22 @@ const CanvasManager = ({
           onNodeSelected(null);
         });
 
+        // Gestiamo il ridimensionamento della finestra
+        const handleResize = () => {
+          fabricCanvas.setDimensions({
+            width: window.innerWidth - 400,
+            height: window.innerHeight - 60
+          });
+          fabricCanvas.renderAll();
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // Imposta il canvas e segna che è pronto
+        setCanvas(fabricCanvas);
+        setIsCanvasReady(true);
+        console.log('Canvas inizializzato con successo!');
+
         return () => {
           window.removeEventListener('resize', handleResize);
           fabricCanvas.dispose();
@@ -176,31 +181,44 @@ const CanvasManager = ({
         console.error('Errore durante l\'inizializzazione del canvas:', error);
       }
     }
-  }, [canvas, onNodeSelected]);
+  }, [canvasEl, canvas, onNodeSelected]);
 
+  // Sincronizzazione dei nodi
   useEffect(() => {
-    if (!isCanvasReady || !canvas || !Array.isArray(nodes) || !currentProject) {
-      console.warn('Canvas is not ready or invalid data for synchronization:', {
-        isCanvasReady,
-        canvas,
-        nodes,
-        currentProject
+    if (!isCanvasReady || !canvas || !currentProject || !Array.isArray(nodes)) {
+      console.log('Canvas non pronto o dati non validi per la sincronizzazione:', {
+        isCanvasReady, 
+        canvas: !!canvas, 
+        currentProject: !!currentProject, 
+        nodesArray: Array.isArray(nodes)
       });
       return;
     }
     
+    console.log('Sincronizzazione nodi con canvas...', nodes.length);
+    
     try {
-      console.log('Synchronizing nodes with canvas...', nodes);
-      canvas.getObjects().forEach(obj => canvas.remove(obj));
-
-      nodes.forEach(node => {
-        NodeFactory.createNodeFromData(canvas, node);
-      });
-
-      canvas.renderAll();
-      console.log('Canvas synchronization completed.');
+      // Rimuoviamo gli oggetti esistenti
+      canvas.getObjects().slice().forEach(obj => canvas.remove(obj));
+      
+      // Aggiungiamo un ritardo per sicurezza
+      setTimeout(() => {
+        // Aggiungiamo ogni nodo
+        let successCount = 0;
+        nodes.forEach(node => {
+          try {
+            const obj = NodeFactory.createNodeFromData(canvas, node);
+            if (obj) successCount++;
+          } catch (err) {
+            console.error('Errore durante la creazione del nodo:', node, err);
+          }
+        });
+        
+        console.log(`Sincronizzati ${successCount}/${nodes.length} nodi`);
+        canvas.renderAll();
+      }, 100);
     } catch (error) {
-      console.error('Error during node synchronization:', error);
+      console.error('Errore durante la sincronizzazione dei nodi:', error);
     }
   }, [isCanvasReady, canvas, nodes, currentProject]);
 
