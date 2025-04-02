@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Canvas, Rect } from 'fabric';
+import { createMachine } from '../icons/Machine'; // Aggiungi questa importazione all'inizio del file
 import './Canvas.css';
 import NodeFactory from '../icons/NodeFactory';
 
@@ -183,6 +184,20 @@ const CanvasManager = ({
     }
   }, [canvasEl, canvas, onNodeSelected]);
 
+useEffect(() => {
+  if (canvasEl.current) {
+    console.log('Canvas DOM element:', {
+      width: canvasEl.current.width,
+      height: canvasEl.current.height,
+      offsetWidth: canvasEl.current.offsetWidth,
+      offsetHeight: canvasEl.current.offsetHeight,
+      style: canvasEl.current.style,
+      clientRect: canvasEl.current.getBoundingClientRect()
+    });
+  }
+}, [canvasEl]);
+
+
   // Sincronizzazione dei nodi
   useEffect(() => {
     if (!isCanvasReady || !canvas || !currentProject || !Array.isArray(nodes)) {
@@ -222,50 +237,86 @@ const CanvasManager = ({
     }
   }, [isCanvasReady, canvas, nodes, currentProject]);
 
-  return (
-    <div 
-      className="canvas-container" 
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
+ return (
+  <div 
+    className="canvas-container" 
+    onDragOver={handleDragOver}
+    onDrop={handleDrop}
+  >
+    <canvas 
+      ref={canvasEl}
+      id="canvas"
+      style={{
+        border: '3px solid red',
+        visibility: 'visible !important',
+        opacity: '1 !important',
+        pointerEvents: 'auto !important'
+      }}
+    ></canvas>
+
+    {!isCanvasReady && (
+      <div className="canvas-loading">Inizializzazione del canvas...</div>
+    )}
+
+    {isCanvasReady && !currentProject && (
+      <div className="canvas-message">
+        <p>Seleziona o crea un progetto dal menu File</p>
+      </div>
+    )}
+
+    <button 
+      className="test-button" 
+      onClick={() => {
+        // Codice esistente del bottone di test
+      }}
     >
-      <canvas ref={canvasEl}></canvas>
+      Test Canvas
+    </button>
 
-      {!isCanvasReady && (
-        <div className="canvas-loading">Inizializzazione del canvas...</div>
-      )}
+    {/* Nuovo bottone di test che disegna direttamente sul canvas */}
+   <button 
+  className="test-button" 
+  style={{
+    position: 'absolute',
+    bottom: '50px',
+    left: '20px',
+    padding: '8px 16px',
+    background: 'red',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    zIndex: 1000
+  }}
+  onClick={() => {
+    if (canvas && isCanvasReady) {
+      console.log('Test button clicked - creating machine icon');
+      try {
+        // Usa direttamente la funzione createMachine
+        const machineIcon = createMachine(canvas, 200, 200);
+        console.log('Created machine icon:', machineIcon);
+        
+        // Forza il rendering
+        canvas.renderAll();
+        
+        // Prova a selezionare l'oggetto appena creato
+        if (machineIcon) {
+          canvas.setActiveObject(machineIcon);
+          console.log('Machine icon selected');
+        }
+      } catch (error) {
+        console.error('Error during machine icon creation:', error);
+      }
+    } else {
+      console.error('Canvas not ready for machine icon test');
+    }
+  }}
+>
+  Test Machine Icon
+</button>
 
-      {isCanvasReady && !currentProject && (
-        <div className="canvas-message">
-          <p>Seleziona o crea un progetto dal menu File</p>
-        </div>
-      )}
-
-      <button 
-        className="test-button" 
-        onClick={() => {
-          if (canvas) {
-            try {
-              const rect = new Rect({
-                left: 100,
-                top: 100,
-                width: 50,
-                height: 50,
-                fill: 'red'
-              });
-              canvas.add(rect);
-              canvas.renderAll();
-            } catch (error) {
-              console.error('Errore durante il test del canvas:', error);
-            }
-          } else {
-            console.error('Canvas non disponibile per il test');
-          }
-        }}
-      >
-        Test Canvas
-      </button>
-    </div>
-  );
-};
+  </div>
+);
+}; 
 
 export default CanvasManager;

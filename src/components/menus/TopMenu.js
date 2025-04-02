@@ -17,18 +17,7 @@ const TopMenu = () => {
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
 
-  // Carica i progetti all'avvio del componente
-  useEffect(() => {
-    // Utilizziamo questa sintassi per evitare il loop infinito
-    // Non includiamo loadProjects nella lista di dipendenze
-    const loadInitialProjects = async () => {
-      await loadProjects();
-    };
-    
-    loadInitialProjects();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  
   // Gestisce la creazione di un nuovo progetto
   const handleNewProject = () => {
     setShowNewDialog(true);
