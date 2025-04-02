@@ -5,6 +5,35 @@ import { createMachine } from '../icons/Machine';
 import './Canvas.css';
 import NodeFactory from '../icons/NodeFactory';
 
+const setupSelectionListeners = (fabricCanvas, onNodeSelected) => {
+  fabricCanvas.off('selection:created');
+  fabricCanvas.off('selection:updated');
+  fabricCanvas.off('selection:cleared');
+
+  fabricCanvas.on('selection:created', (e) => {
+    const selected = e.selected?.[0];
+    if (selected && typeof onNodeSelected === 'function') {
+      onNodeSelected(selected);
+      console.log('🎯 Nodo selezionato (created):', selected);
+    }
+  });
+
+  fabricCanvas.on('selection:updated', (e) => {
+    const selected = e.selected?.[0];
+    if (selected && typeof onNodeSelected === 'function') {
+      onNodeSelected(selected);
+      console.log('🔄 Nodo selezionato (updated):', selected);
+    }
+  });
+
+  fabricCanvas.on('selection:cleared', () => {
+    if (typeof onNodeSelected === 'function') {
+      onNodeSelected(null);
+      console.log('🚫 Selezione annullata');
+    }
+  });
+};
+
 const CanvasManager = ({ 
   currentProject, 
   nodes, 
@@ -82,6 +111,7 @@ const CanvasManager = ({
         setCanvas(fabricCanvas);
         setIsCanvasReady(true);
         performCanvasDiagnostics(fabricCanvas);
+        setupSelectionListeners(fabricCanvas, onNodeSelected);
 
         const handleResize = () => {
           const container = canvasEl.current.parentElement;
@@ -119,6 +149,31 @@ const CanvasManager = ({
     });
     canvas.renderAll();
     console.log(`✅ Synced ${created}/${nodes.length} nodes`);
+
+    // 🔍 Diagnostica visiva degli oggetti sul canvas
+    console.log('🚨 Oggetti finali nel canvas:', canvas.getObjects());
+
+    canvas.getObjects().forEach((obj, i) => {
+      const { left, top, width, height, type, objectType } = obj;
+      console.log(`🔎 Obj ${i}:`, {
+        type,
+        objectType,
+        left,
+        top,
+        width,
+        height,
+        text: obj.text || (obj._objects ? obj._objects.find(o => o.type === 'textbox')?.text : '')
+      });
+
+      obj.set({
+        stroke: '#ff0000',
+        strokeWidth: 1,
+        borderColor: '#000',
+        cornerColor: '#00ff00'
+      });
+    });
+
+    canvas.renderAll();
   }, [isCanvasReady, canvas, nodes, currentProject]);
 
   const handleDragOver = (e) => {

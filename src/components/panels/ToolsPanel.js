@@ -1,59 +1,44 @@
-import React from 'react';
+// FILE: ToolsPanel.js
+import React, { useState } from 'react';
 import './Panels.css';
 
+const tools = [
+  { type: 'machine', label: 'Macchina' },
+  { type: 'transport', label: 'Trasporto' },
+  { type: 'storage', label: 'Magazzino' },
+  { type: 'connection', label: 'Connessione' }
+];
+
 const ToolsPanel = ({ onSelectTool }) => {
+  const [activeTool, setActiveTool] = useState(null);
+
   const handleDragStart = (event, toolType) => {
     event.dataTransfer.setData('toolType', toolType);
   };
 
   const handleToolClick = (toolType) => {
-    console.log('Tool clicked:', toolType); // Debug log
-    onSelectTool(toolType);
+    const newActive = activeTool === toolType ? null : toolType;
+    setActiveTool(newActive);
+    if (onSelectTool) {
+      onSelectTool(newActive);
+    }
   };
 
   return (
     <div className="panel tools-panel">
       <h3>Strumenti</h3>
-      <div className="tool-item">
-        <button 
-          className="tool-button" 
-          draggable 
-          onDragStart={(e) => handleDragStart(e, 'machine')}
-          onClick={() => handleToolClick('machine')}
-        >
-          Macchina
-        </button>
-      </div>
-      <div className="tool-item">
-        <button 
-          className="tool-button" 
-          draggable 
-          onDragStart={(e) => handleDragStart(e, 'transport')}
-          onClick={() => handleToolClick('transport')}
-        >
-          Trasporto
-        </button>
-      </div>
-      <div className="tool-item">
-        <button 
-          className="tool-button" 
-          draggable 
-          onDragStart={(e) => handleDragStart(e, 'storage')}
-          onClick={() => handleToolClick('storage')}
-        >
-          Magazzino
-        </button>
-      </div>
-      <div className="tool-item">
-        <button 
-          className="tool-button" 
-          draggable 
-          onDragStart={(e) => handleDragStart(e, 'connection')}
-          onClick={() => handleToolClick('connection')}
-        >
-          Connessione
-        </button>
-      </div>
+      {tools.map(({ type, label }) => (
+        <div className="tool-item" key={type}>
+          <button
+            className={`tool-button ${activeTool === type ? 'active' : ''}`}
+            draggable
+            onDragStart={(e) => handleDragStart(e, type)}
+            onClick={() => handleToolClick(type)}
+          >
+            {label}
+          </button>
+        </div>
+      ))}
     </div>
   );
 };

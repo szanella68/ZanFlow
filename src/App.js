@@ -1,59 +1,75 @@
-import React, { useState } from 'react';
-import './App.css';
+// FILE: App.js
+import React, { useState, useEffect } from 'react';
 import CanvasManager from './components/canvas/CanvasManager';
-import TopMenu from './components/menus/TopMenu';
-import ToolsPanel from './components/panels/ToolsPanel';
 import PropertiesPanel from './components/panels/PropertiesPanel';
-import { ProjectProvider, useProject } from './context/ProjectContext';
-import ErrorBoundary from './components/ErrorBoundary';
+import ToolsPanel from './components/panels/ToolsPanel';
+import './components/canvas/Canvas.css';
+import './components/panels/Panels.css';
+import TopMenu from './components/menus/TopMenu';
 
-const AppContent = () => {
-  const [selectedTool, setSelectedTool] = useState(null);
+
+
+const App = () => {
+  const [currentProject, setCurrentProject] = useState({ id: 11 }); // mock project
+  const [nodes, setNodes] = useState([]);
   const [selectedObject, setSelectedObject] = useState(null);
-  const { currentProject, nodes, addNode, updateNode } = useProject();
 
-  const handleSelectTool = (toolType) => {
-    setSelectedTool(toolType);
-  };
+  // ⚡ Mock: carica nodi di progetto all'avvio
+  useEffect(() => {
+    if (currentProject?.id) {
+      fetch(`/api/projects/${currentProject.id}/nodes`)
+        .then((res) => res.json())
+        .then((data) => setNodes(data))
+        .catch((err) => console.error('❌ Errore caricamento nodi:', err));
+    }
+  }, [currentProject]);
 
-  const handleNodeSelected = (object) => {
-    setSelectedObject(object);
-  };
-
-  const handleNodeAdded = (nodeData, callback) => {
-    addNode(nodeData).then(newNode => {
-      if (callback && newNode) {
-        callback(newNode);
-      }
+  const handleNodeAdded = async (node) => {
+    const response = await fetch(`/api/nodes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(node)
     });
+    const saved = await response.json();
+    setNodes((prev) => [...prev, saved]);
+    return saved;
   };
 
-  return (
-    <div className="App">
+  const handleNodeUpdated = async (updatedData) => {
+    if (!selectedObject?.id) return;
+    const response = await fetch(`/api/nodes/${selectedObject.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedData)
+    });
+    const updated = await response.json();
+    setNodes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+  };
+
+  const handleSelectTool = (tool) => {
+    console.log('🔧 Tool selezionato:', tool);
+    // futuro: click-to-place
+  };
+
+ return (
+    <>
       <TopMenu />
-      <div className="main-container">
+      <div style={{ display: 'flex', height: 'calc(100vh - 40px)' }}>
         <ToolsPanel onSelectTool={handleSelectTool} />
-        <ErrorBoundary>
-          <CanvasManager
-            currentProject={currentProject}
-            nodes={nodes}
-            onNodeAdded={handleNodeAdded}
-            onNodeUpdated={updateNode}
-            onNodeSelected={handleNodeSelected}
-          />
-        </ErrorBoundary>
-        <PropertiesPanel selectedObject={selectedObject} />
+        <CanvasManager
+          currentProject={currentProject}
+          nodes={nodes}
+          onNodeAdded={handleNodeAdded}
+          onNodeSelected={setSelectedObject}
+          onNodeUpdated={handleNodeUpdated}
+        />
+        <PropertiesPanel
+          selectedObject={selectedObject}
+          onUpdate={handleNodeUpdated}
+        />
       </div>
-    </div>
+    </>
   );
 };
-
-function App() {
-  return (
-    <ProjectProvider>
-      <AppContent />
-    </ProjectProvider>
-  );
-}
 
 export default App;

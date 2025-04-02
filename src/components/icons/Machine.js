@@ -1,178 +1,46 @@
 import { Circle, Rect, Group, Textbox } from 'fabric';
 
-export const createMachine = (canvas, left, top) => {
-  console.group('🏭 Machine Icon Creation');
-  
-  // Validate canvas
-  if (!canvas) {
-    console.error('❌ FATAL: Canvas is not initialized');
-    console.groupEnd();
-    return null;
-  }
+//export const createMachine = (canvas, left, top) => {
 
-  console.log('Canvas Verification:', {
-    canvasExists: !!canvas,
-    hasAddMethod: typeof canvas.add === 'function',
-    hasRenderAllMethod: typeof canvas.renderAll === 'function'
+
+export const createMachine = (canvas, position, data = {}) => {
+  if (!canvas) return null;
+
+  const width = 132;
+  const height = 62;
+
+  const box = new Rect({
+    width,
+    height,
+    fill: '#d3e5ff',
+    rx: 10,
+    ry: 10,
+    stroke: '#1976d2',
+    strokeWidth: 1
   });
 
-  // Detailed configuration logging
-  console.log('Machine Creation Parameters:', { left, top });
-
-  try {
-    // Main machine rectangle
-    const rect = new Rect({
-      width: 120,
-      height: 60,
-      fill: '#deeaee',
-      stroke: '#2b7a78',
-      strokeWidth: 2,
-      rx: 5,
-      ry: 5,
-      originX: 'center',
-      originY: 'center'
-    });
-
-    // Gear representation
-    const gear = new Circle({
-      radius: 10,
-      fill: '#2b7a78',
-      left: -40,
-      top: -15,
-      originX: 'center',
-      originY: 'center'
-    });
-
-    // Connection points
-    const inputPoint = new Circle({
-      left: -60,
-      top: 0,
-      radius: 5,
-      fill: '#17252a',
-      stroke: '#3aafa9',
-      strokeWidth: 2,
-      originX: 'center',
-      originY: 'center'
-    });
-
-    const outputPoint = new Circle({
-      left: 60,
-      top: 0,
-      radius: 5,
-      fill: '#17252a',
-      stroke: '#3aafa9',
-      strokeWidth: 2,
-      originX: 'center',
-      originY: 'center'
-    });
-
-    // Background for text
-    const textBg = new Rect({
-      width: 80,
-      height: 20,
-      fill: '#deeaee',
-      stroke: 'transparent',
-      originX: 'center',
-      originY: 'center',
-      top: 15
-    });
-
-    // Text
-    const textbox = new Textbox('Macchina', {
-      width: 80,
-      fontSize: 14,
-      textAlign: 'center',
-      fill: '#17252a',
-      originX: 'center',
-      originY: 'center',
-      top: 15
-    });
-
-    // Group all components
-    const group = new Group(
-      [rect, gear, inputPoint, outputPoint, textBg, textbox], 
-      {
-        left: left,
-        top: top,
-        selectable: true,
-        hasControls: true,
-        hasBorders: true,
-        objectType: 'machine',
-        data: {
-          name: 'Macchina',
-          cycleTime: 0,
-          piecesPerHour: 0,
-          operators: 0,
-          rejectRate: 0
-        }
-      }
-    );
-
-    // Log group details before adding
-    console.log('Machine Group Details:', {
-      left: group.left,
-      top: group.top,
-      width: group.width,
-      height: group.height
-    });
-
-    // Attempt to add to canvas
-    try {
-      canvas.add(group);
-      console.log('✅ Machine Group Added to Canvas');
-    } catch (addError) {
-      console.error('❌ Error Adding Machine to Canvas:', addError);
-      console.groupEnd();
-      return null;
-    }
-
-    // Force render
-    try {
-      canvas.renderAll();
-      console.log('🎨 Canvas Rendered');
-    } catch (renderError) {
-      console.error('❌ Rendering Error:', renderError);
-    }
-
-    console.groupEnd();
-    return group;
-
-  } catch (error) {
-    console.error('❌ Machine Creation Fatal Error:', error);
-    console.groupEnd();
-    return null;
-  }
-};
-
-export const createMachineFromData = (canvas, node) => {
-  if (!node || typeof node.position_x !== 'number' || typeof node.position_y !== 'number') {
-    console.error('Invalid node data:', node);
-    return null;
-  }
-
-  const machine = createMachine(canvas, node.position_x, node.position_y);
-  if (machine) {
-    machine.set('dbId', node.id);
-    const data = node.data || machine.data;
-    machine.set('data', data);
-    if (machine._objects) {
-      machine._objects.forEach(obj => {
-        if (obj.type === 'textbox') {
-          obj.set('text', data.name || 'Macchina');
-        }
-      });
-    }
-    console.log('Machine created from data:', machine);
-    canvas.renderAll();
-  } else {
-    console.error('Failed to create machine from data:', node);
-  }
-
-  return machine;
-};
-
-export const initializeCanvasWithMachines = (canvas, machines) => {
-  machines.forEach(machine => {
-    createMachine(canvas, machine.left, machine.top);
+  const label = new Textbox(data.name || 'Macchina', {
+    fontSize: 14,
+    width: width - 10,
+    textAlign: 'center',
+    fill: '#000000',
+    top: 20,
+    editable: false
   });
+
+  const group = new Group([box, label], {
+    left: position.left,
+    top: position.top,
+    hasControls: false,
+    lockScalingX: true,
+    lockScalingY: true,
+    objectCaching: false,
+    objectType: 'machine'
+  });
+
+  group.data = data;
+  canvas.add(group);
+  canvas.renderAll();
+
+  return group;
 };

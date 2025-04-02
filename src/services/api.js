@@ -1,81 +1,74 @@
-const API_URL = 'http://localhost:3002/api';
+// FILE: api.js
+const API_BASE = 'http://localhost:3002/api';
 
-export const fetchProjects = async () => {
-  const response = await fetch(`${API_URL}/projects`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch projects');
-  }
-  return await response.json();
-};
+export async function fetchProjects() {
+  const res = await fetch(`${API_BASE}/projects`);
+  return res.json();
+}
 
-export const createProject = async (projectData) => {
-  const response = await fetch(`${API_URL}/projects`, {
+export async function createProject(data) {
+  const res = await fetch(`${API_BASE}/projects`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(projectData),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
   });
-  if (!response.ok) {
-    throw new Error('Failed to create project');
-  }
-  return await response.json();
-};
+  return res.json();
+}
 
-export const fetchNodes = async (projectId) => {
-  const response = await fetch(`${API_URL}/projects/${projectId}/nodes`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch nodes');
-  }
-  return await response.json();
-};
+export async function fetchNodes(projectId) {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/nodes`);
+  return res.json();
+}
 
-export const createNode = async (nodeData) => {
-  const response = await fetch(`${API_URL}/nodes`, {
+export async function createNode(data) {
+  const res = await fetch(`${API_BASE}/nodes`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(nodeData),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
   });
-  if (!response.ok) {
-    throw new Error('Failed to create node');
-  }
-  return await response.json();
-};
+  return res.json();
+}
 
-export const updateNode = async (nodeId, nodeData) => {
-  const response = await fetch(`${API_URL}/nodes/${nodeId}`, {
+export async function updateNode(id, data) {
+  const res = await fetch(`${API_BASE}/nodes/${id}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(nodeData),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
   });
-  if (!response.ok) {
-    throw new Error('Failed to update node');
-  }
-  return await response.json();
-};
+  return res.json();
+}
 
-export const fetchConnections = async (projectId) => {
-  const response = await fetch(`${API_URL}/projects/${projectId}/connections`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch connections');
-  }
-  return await response.json();
-};
+export async function deleteNode(id) {
+  const res = await fetch(`${API_BASE}/nodes/${id}`, {
+    method: 'DELETE' });
+  return res.ok;
+}
 
-export const createConnection = async (connectionData) => {
-  const response = await fetch(`${API_URL}/connections`, {
+export async function fetchConnections(projectId) {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/connections`);
+  return res.json();
+}
+
+export async function createConnection(data) {
+  const res = await fetch(`${API_BASE}/connections`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(connectionData),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
   });
-  if (!response.ok) {
-    throw new Error('Failed to create connection');
-  }
-  return await response.json();
-};
+  return res.json();
+}
+
+export async function deleteConnection(id) {
+  const res = await fetch(`${API_BASE}/connections/${id}`, {
+    method: 'DELETE' });
+  return res.ok;
+}
+
+export async function updateProject(id, data) {
+  const res = await fetch(`${API_BASE}/projects/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  return res.json();
+}
