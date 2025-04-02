@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { fabric } from 'fabric'; // Importazione corretta di fabric.js
-import './Canvas.css'; // Riutilizziamo lo stile esistente
+import { Circle, Rect, Group, Textbox } from 'fabric';
+import './Canvas.css';
 import { createMachine } from '../icons/Machine';
-import createTransport from '../icons/Transport';
-import createStorage from '../icons/Storage';
+import { createTransport } from '../icons/Transport';
+import { createStorage } from '../icons/Storage';
 import NodeFactory from '../icons/NodeFactory';
 
 const CanvasManager = ({ 
@@ -17,13 +17,120 @@ const CanvasManager = ({
   const [canvas, setCanvas] = useState(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
   
+  // Gestione del drag and drop
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    
+    if (!currentProject || !isCanvasReady || !canvas) {
+      alert('Seleziona o crea un progetto prima di aggiungere elementi');
+      return;
+    }
+    
+    const toolType = e.dataTransfer.getData('toolType');
+    if (!toolType) {
+      console.error('Nessun tipo di strumento disponibile nel drop');
+      return;
+    }
+    
+    try {
+      // Calcola posizione in modo sicuro
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // Crea l'oggetto base
+      let fabricObject;
+      const baseNodeData = {
+        name: toolType.charAt(0).toUpperCase() + toolType.slice(1),
+        cycleTime: 0,
+        piecesPerHour: 0,
+        operators: 0,
+        rejectRate: 0
+      };
+      
+      // Dati specifici per tipo di nodo
+      let nodeData = { ...baseNodeData };
+      
+      switch (toolType) {
+        case 'machine':
+          nodeData = {
+            ...nodeData,
+            throughputTime: 0,
+            supplier: 'interno',
+            hourlyCost: 0,
+            availability: 100
+          };
+          fabricObject = createMachine(canvas, x, y);
+          break;
+        case 'transport':
+          nodeData = {
+            ...nodeData,
+            transportType: 'manuale',
+            throughputTime: 0,
+            distance: 0,
+            minBatch: 1
+          };
+          fabricObject = createTransport(canvas, x, y);
+          break;
+        case 'storage':
+          nodeData = {
+            ...nodeData,
+            capacity: 0,
+            averageStayTime: 0,
+            managementMethod: 'FIFO',
+            storageCost: 0
+          };
+          fabricObject = createStorage(canvas, x, y);
+          break;
+        case 'connection':
+          console.log('Connessione selezionata, da implementare');
+          return;
+        default:
+          console.error('Tipo di strumento non riconosciuto');
+          return;
+      }
+      
+      if (fabricObject) {
+        // Prepara i dati per il salvataggio
+        const nodeForDb = {
+          project_id: currentProject.id,
+          node_type: toolType,
+          name: nodeData.name,
+          position_x: x,
+          position_y: y,
+          data: nodeData
+        };
+        
+        // Notifica il contesto del progetto
+        onNodeAdded(nodeForDb, (savedNode) => {
+          if (savedNode && savedNode.id) {
+            fabricObject.set('dbId', savedNode.id);
+            canvas.renderAll();
+            
+            // Seleziona l'oggetto appena creato
+            canvas.setActiveObject(fabricObject);
+            onNodeSelected(fabricObject);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Errore durante il drop:', error);
+      alert('Si è verificato un errore durante l\'aggiunta dell\'elemento.');
+    }
+  };
+  
   // Inizializzazione del canvas
   useEffect(() => {
     if (canvasEl.current && !canvas) {
       try {
         console.log('Inizializzazione canvas in CanvasManager...');
         
-        // Usa fabric.Canvas invece di una importazione diretta
+        // Usa il costruttore Canvas di fabric direttamente
         const fabricCanvas = new fabric.Canvas(canvasEl.current, {
           width: window.innerWidth - 400,
           height: window.innerHeight - 60,
@@ -33,6 +140,7 @@ const CanvasManager = ({
         });
         
         setCanvas(fabricCanvas);
+        setIsCanvasReady(true);
         
         // Gestione del ridimensionamento
         const handleResize = () => {
@@ -77,15 +185,7 @@ const CanvasManager = ({
     }
   }, [canvas, onNodeSelected]);
   
-  // Effetto per segnalare che il canvas è pronto
-  useEffect(() => {
-    if (canvas) {
-      setIsCanvasReady(true);
-      console.log('Canvas segnalato come pronto');
-    }
-  }, [canvas]);
-  
-  // Effetto per sincronizzare i nodi dal database col canvas
+  // Effetto per sincronizzare i nodi
   useEffect(() => {
     if (!isCanvasReady || !canvas || !Array.isArray(nodes) || !currentProject) {
       return;
@@ -108,115 +208,7 @@ const CanvasManager = ({
       console.error('Errore durante la sincronizzazione dei nodi:', error);
     }
   }, [isCanvasReady, canvas, nodes, currentProject]);
-  
-  // Funzioni di drag & drop
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-  };
-  
-  const handleDrop = (e) => {
-    e.preventDefault();
-    
-    if (!currentProject || !isCanvasReady || !canvas) {
-      alert('Seleziona o crea un progetto prima di aggiungere elementi');
-      return;
-    }
-    
-    const toolType = e.dataTransfer.getData('toolType');
-    if (!toolType) {
-      console.error('Nessun tipo di strumento disponibile nel drop');
-      return;
-    }
-    
-    try {
-      // Calcola posizione in modo sicuro
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      // Crea l'oggetto base
-      let fabricObject;
-      const baseNodeData = {
-        name: toolType.charAt(0).toUpperCase() + toolType.slice(1),
-        cycleTime: 0,
-        piecesPerHour: 0,
-        operators: 0,
-        rejectRate: 0
-      };
-      
-      // Aggiungi proprietà specifiche per tipo
-      let nodeData = { ...baseNodeData };
-      
-      switch (toolType) {
-        case 'machine':
-          nodeData = {
-            ...nodeData,
-            throughputTime: 0,
-            supplier: 'interno',
-            hourlyCost: 0,
-            availability: 100
-          };
-          fabricObject = createMachine(canvas, x, y);
-          break;
-        case 'transport':
-          nodeData = {
-            ...nodeData,
-            transportType: 'manuale',
-            throughputTime: 0,
-            distance: 0,
-            minBatch: 1
-          };
-          fabricObject = createTransport(canvas, x, y);
-          break;
-        case 'storage':
-          nodeData = {
-            ...nodeData,
-            capacity: 0,
-            averageStayTime: 0,
-            managementMethod: 'FIFO',
-            storageCost: 0
-          };
-          fabricObject = createStorage(canvas, x, y);
-          break;
-        case 'connection':
-          // La connessione verrà implementata successivamente
-          console.log('Connessione selezionata, da implementare');
-          return;
-        default:
-          console.error('Tipo di strumento non riconosciuto');
-          return;
-      }
-      
-      if (fabricObject) {
-        // Prepara i dati per il salvataggio
-        const nodeForDb = {
-          project_id: currentProject.id,
-          node_type: toolType,
-          name: nodeData.name,
-          position_x: x,
-          position_y: y,
-          data: nodeData
-        };
-        
-        // Notifica il contesto del progetto
-        onNodeAdded(nodeForDb, (savedNode) => {
-          if (savedNode && savedNode.id) {
-            fabricObject.set('dbId', savedNode.id);
-            canvas.renderAll();
-            
-            // Seleziona l'oggetto appena creato
-            canvas.setActiveObject(fabricObject);
-            onNodeSelected(fabricObject);
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Errore durante il drop:', error);
-      alert('Si è verificato un errore durante l\'aggiunta dell\'elemento.');
-    }
-  };
-  
+
   return (
     <div 
       className="canvas-container" 
@@ -240,6 +232,7 @@ const CanvasManager = ({
         onClick={() => {
           if (canvas) {
             try {
+              // Usa il costruttore Rect di fabric
               const rect = new fabric.Rect({
                 left: 100,
                 top: 100,

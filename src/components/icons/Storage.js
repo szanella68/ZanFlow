@@ -1,4 +1,4 @@
-import { fabric } from 'fabric';
+import { Circle, Rect, Group, Textbox } from 'fabric';
 
 export const createStorage = (canvas, left, top) => {
   // Rettangolo principale

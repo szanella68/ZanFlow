@@ -1,4 +1,4 @@
-import { fabric } from 'fabric';
+import { Circle, Rect, Group, Textbox } from 'fabric';
 
 export const createMachine = (canvas, left, top) => {
   // Rettangolo principale

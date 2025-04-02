@@ -1,7 +1,7 @@
 // src/components/icons/IconFactory.js
 import { createMachine } from './Machine';
-import createTransport from './Transport';
-import createStorage from './Storage';
+import { createTransport } from './Transport';
+import { createStorage } from './Storage';
 
 const IconFactory = {
   createMachine,
