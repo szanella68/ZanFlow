@@ -1,119 +1,70 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Canvas as FabricCanvas } from 'fabric';
-import IconFactory from '../icons/IconFactory';
-import { useProject } from '../../context/ProjectContext';
-import './Canvas.css';
-
-const Canvas = ({ selectedTool, onSelectObject }) => {
-  const canvasRef = useRef(null);
-  const fabricCanvasRef = useRef(null);
-  const canvasInitializedRef = useRef(false);
-  const { currentProject, addNode, setCanvasRef } = useProject();
+// Gestisce il drop sul canvas
+const handleDrop = async (e) => {
+  e.preventDefault();
   
-  useEffect(() => {
-    // Inizializza il canvas solo una volta quando il componente viene montato
-    if (!canvasInitializedRef.current && canvasRef.current) {
-      console.log('Inizializzazione canvas...');
+  console.log('DEBUG: Drop avvenuto');
+  
+  // Se non c'è un progetto selezionato o il canvas non è inizializzato, mostra un messaggio di errore
+  if (!currentProject) {
+    console.log('DEBUG: Progetto corrente non disponibile durante drop');
+    alert('Seleziona o crea un progetto prima di aggiungere elementi');
+    return;
+  }
+  
+  // Verifica che il canvas sia inizializzato
+  if (!fabricCanvasRef.current) {
+    console.log('DEBUG: Canvas non inizializzato durante drop');
+    alert('Il canvas non è ancora pronto. Attendi qualche istante e riprova.');
+    return;
+  }
+  
+  console.log('DEBUG: Drop con progetto corrente:', currentProject.name);
+  
+  // Recupera il tipo di strumento trascinato
+  const toolType = e.dataTransfer.getData('toolType');
+  if (!toolType) {
+    console.error('DEBUG: Nessun tipo di strumento disponibile nel drop');
+    return;
+  }
+  
+  console.log('DEBUG: Tipo di strumento trascinato:', toolType);
+  
+  // Calcola la posizione del drop in modo sicuro
+  try {
+    const canvas = fabricCanvasRef.current;
+    
+    // Verifica che il canvas sia valido
+    if (!canvas || typeof canvas.add !== 'function') {
+      console.error('DEBUG: Canvas non valido durante drop');
+      return;
+    }
+    
+    let x, y;
+    
+    // Calcola la posizione in modo sicuro
+    try {
+      // Prova a ottenere l'elemento DOM del canvas
+      const canvasEl = canvas.getElement();
       
-      fabricCanvasRef.current = new FabricCanvas(canvasRef.current, {
-        width: window.innerWidth - 400, // Sottraiamo lo spazio per i pannelli laterali
-        height: window.innerHeight - 60, // Sottraiamo lo spazio per il menu in alto
-        backgroundColor: '#f5f5f5',
-        selection: true,
-        preserveObjectStacking: true,
-      });
-
-      canvasInitializedRef.current = true;
-
-      // Registra il riferimento del canvas nel contesto del progetto
-      if (setCanvasRef) {
-        console.log('Registrazione canvas nel context (una sola volta)');
-        setCanvasRef(fabricCanvasRef.current);
+      if (!canvasEl) {
+        console.error('DEBUG: Elemento canvas non disponibile durante drop');
+        // Utilizziamo una posizione predefinita
+        x = 100;
+        y = 100;
       } else {
-        console.error('setCanvasRef non disponibile nel context');
+        // Calcola la posizione in base all'offset del canvas
+        const rect = canvasEl.getBoundingClientRect();
+        x = e.clientX - rect.left;
+        y = e.clientY - rect.top;
       }
-      
-      // Funzione per ridimensionare il canvas quando cambia la dimensione della finestra
-      const resizeCanvas = () => {
-        if (fabricCanvasRef.current) {
-          fabricCanvasRef.current.setDimensions({
-            width: window.innerWidth - 400,
-            height: window.innerHeight - 60,
-          });
-          fabricCanvasRef.current.renderAll();
-        }
-      };
-
-      // Aggiungi l'event listener per il ridimensionamento
-      window.addEventListener('resize', resizeCanvas);
-
-      // Gestisce la selezione di oggetti nel canvas
-      if (fabricCanvasRef.current) {
-        fabricCanvasRef.current.on('selection:created', (e) => {
-          if (e.selected && e.selected.length > 0) {
-            onSelectObject(e.selected[0]);
-          }
-        });
-
-        fabricCanvasRef.current.on('selection:updated', (e) => {
-          if (e.selected && e.selected.length > 0) {
-            onSelectObject(e.selected[0]);
-          }
-        });
-
-        fabricCanvasRef.current.on('selection:cleared', () => {
-          onSelectObject(null);
-        });
-      }
-
-      // Funzione di pulizia
-      return () => {
-        window.removeEventListener('resize', resizeCanvas);
-        if (fabricCanvasRef.current) {
-          fabricCanvasRef.current.dispose();
-        }
-      };
-    }
-  }, [onSelectObject, setCanvasRef]);
-
-  // Gestisce il drag over sul canvas
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-  };
-
-  // Gestisce il drop sul canvas
-  const handleDrop = async (e) => {
-    e.preventDefault();
-    
-    // Se non c'è un progetto selezionato o il canvas non è inizializzato, mostra un messaggio di errore
-    if (!currentProject) {
-      console.log('Progetto corrente non disponibile:', currentProject);
-      alert('Seleziona o crea un progetto prima di aggiungere elementi');
-      return;
+    } catch (posError) {
+      console.error('DEBUG: Errore nel calcolo della posizione:', posError);
+      // Utilizziamo una posizione predefinita
+      x = 100;
+      y = 100;
     }
     
-    if (!fabricCanvasRef.current) {
-      console.log('Canvas non inizializzato correttamente');
-      alert('Errore nell\'inizializzazione del canvas. Ricarica la pagina.');
-      return;
-    }
-    
-    console.log('Drop avvenuto con progetto corrente:', currentProject.name);
-    
-    // Recupera il tipo di strumento trascinato
-    const toolType = e.dataTransfer.getData('toolType');
-    
-    // Calcola la posizione del drop considerando lo scroll e l'offset del canvas
-    const canvasEl = fabricCanvasRef.current.getElement();
-    if (!canvasEl) {
-      console.error('Elemento canvas non disponibile');
-      return;
-    }
-    
-    const rect = canvasEl.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    console.log('DEBUG: Posizione drop calcolata:', { x, y });
     
     // Dati di base per ogni tipo di nodo
     const baseNodeData = {
@@ -128,49 +79,64 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
     let fabricObject = null;
     let nodeData = { ...baseNodeData };
     
-    switch (toolType) {
-      case 'machine':
-        nodeData = {
-          ...nodeData,
-          throughputTime: 0,
-          supplier: 'interno',
-          hourlyCost: 0,
-          availability: 100
-        };
-        fabricObject = IconFactory.createMachine(fabricCanvasRef.current, x, y);
-        break;
-        
-      case 'transport':
-        nodeData = {
-          ...nodeData,
-          transportType: 'manuale',
-          throughputTime: 0,
-          distance: 0,
-          minBatch: 1
-        };
-        fabricObject = IconFactory.createTransport(fabricCanvasRef.current, x, y);
-        break;
-        
-      case 'storage':
-        nodeData = {
-          ...nodeData,
-          capacity: 0,
-          averageStayTime: 0,
-          managementMethod: 'FIFO',
-          storageCost: 0
-        };
-        fabricObject = IconFactory.createStorage(fabricCanvasRef.current, x, y);
-        break;
-        
-      case 'connection':
-        // La connessione verrà implementata successivamente
-        console.log('Connessione selezionata, seleziona due nodi da collegare');
-        return;
-        
-      default:
-        console.log('Tipo di strumento non riconosciuto:', toolType);
-        return;
+    console.log('DEBUG: Creazione oggetto per tipo:', toolType);
+    
+    try {
+      switch (toolType) {
+        case 'machine':
+          nodeData = {
+            ...nodeData,
+            throughputTime: 0,
+            supplier: 'interno',
+            hourlyCost: 0,
+            availability: 100
+          };
+          fabricObject = IconFactory.createMachine(canvas, x, y);
+          break;
+          
+        case 'transport':
+          nodeData = {
+            ...nodeData,
+            transportType: 'manuale',
+            throughputTime: 0,
+            distance: 0,
+            minBatch: 1
+          };
+          fabricObject = IconFactory.createTransport(canvas, x, y);
+          break;
+          
+        case 'storage':
+          nodeData = {
+            ...nodeData,
+            capacity: 0,
+            averageStayTime: 0,
+            managementMethod: 'FIFO',
+            storageCost: 0
+          };
+          fabricObject = IconFactory.createStorage(canvas, x, y);
+          break;
+          
+        case 'connection':
+          // La connessione verrà implementata successivamente
+          console.log('DEBUG: Connessione selezionata, da implementare');
+          return;
+          
+        default:
+          console.log('DEBUG: Tipo di strumento non riconosciuto');
+          return;
+      }
+    } catch (createError) {
+      console.error('DEBUG: Errore durante la creazione dell\'oggetto:', createError);
+      alert('Errore durante la creazione dell\'elemento. Riprova.');
+      return;
     }
+    
+    if (!fabricObject) {
+      console.error('DEBUG: Creazione oggetto fallita');
+      return;
+    }
+    
+    console.log('DEBUG: Oggetto creato con successo');
     
     // Prepara i dati per il salvataggio nel database
     const nodeForDb = {
@@ -182,45 +148,49 @@ const Canvas = ({ selectedTool, onSelectObject }) => {
       data: nodeData
     };
     
+    console.log('DEBUG: Tentativo di salvataggio nel database');
+    
+    // Salva il nodo nel database
     try {
-      // Salva il nodo nel database
       const savedNode = await addNode(nodeForDb);
       
       // Se il salvataggio ha successo, associa l'ID del database all'oggetto fabric
       if (savedNode && fabricObject) {
+        console.log('DEBUG: Nodo salvato nel DB, ID:', savedNode.id);
         fabricObject.set('dbId', savedNode.id);
-        fabricCanvasRef.current.renderAll();
+        
+        // Renderizziamo il canvas solo se il metodo è disponibile
+        if (canvas.renderAll && typeof canvas.renderAll === 'function') {
+          canvas.renderAll();
+        }
+        
+        // Seleziona l'oggetto appena creato se possibile
+        try {
+          if (canvas.setActiveObject && typeof canvas.setActiveObject === 'function') {
+            canvas.setActiveObject(fabricObject);
+            onSelectObject(fabricObject);
+          }
+        } catch (selectError) {
+          console.error('DEBUG: Errore durante la selezione dell\'oggetto:', selectError);
+          // Non è un errore critico, continuiamo
+        }
       }
-      
-      // Seleziona l'oggetto appena creato per mostrarne le proprietà
-      fabricCanvasRef.current.setActiveObject(fabricObject);
-      onSelectObject(fabricObject);
-    } catch (error) {
-      console.error('Errore nel salvataggio del nodo:', error);
+    } catch (saveError) {
+      console.error('DEBUG: Errore durante il salvataggio nel database:', saveError);
       alert('Errore nel salvataggio dell\'elemento. Riprova.');
-    }
-  };
-
-  // Per mostrare visivamente all'utente che il canvas è pronto per il drag and drop
-  const canvasContainerClass = "canvas-container" + (selectedTool ? " canvas-container-ready" : "");
-
-  return (
-    <div 
-      className={canvasContainerClass}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-      data-tool={selectedTool}
-    >
-      <canvas ref={canvasRef} id="canvas" />
       
-      {/* Aggiungiamo un messaggio di aiuto visibile solo quando non c'è un progetto selezionato */}
-      {!currentProject && (
-        <div className="canvas-message">
-          <p>Seleziona o crea un progetto dal menu File</p>
-        </div>
-      )}
-    </div>
-  );
+      // Se possibile, rimuovi l'oggetto dal canvas poiché non è stato salvato
+      try {
+        if (fabricObject && canvas.remove && typeof canvas.remove === 'function') {
+          canvas.remove(fabricObject);
+          canvas.renderAll();
+        }
+      } catch (removeError) {
+        console.error('DEBUG: Errore durante la rimozione dell\'oggetto:', removeError);
+      }
+    }
+  } catch (error) {
+    console.error('DEBUG: Errore globale durante il processo di drop:', error);
+    alert('Si è verificato un errore. Riprova.');
+  }
 };
-
-export default Canvas;
