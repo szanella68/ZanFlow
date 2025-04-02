@@ -1,7 +1,7 @@
 import { Circle, Rect, Triangle, Group, Textbox } from 'fabric';
 
 export const createTransport = (canvas, left, top) => {
-  // Existing createTransport implementation...
+  // Rettangolo principale
   const rect = new Rect({
     width: 120,
     height: 40,
@@ -14,8 +14,75 @@ export const createTransport = (canvas, left, top) => {
     originY: 'center'
   });
 
-  // ... rest of the existing implementation ...
+  // Freccia (corpo)
+  const arrowShaft = new Rect({
+    width: 30,
+    height: 2,
+    fill: '#1976d2',
+    left: -20,
+    top: -10,
+    originX: 'center',
+    originY: 'center'
+  });
 
+  // Freccia (punta)
+  const arrowHead = new Triangle({
+    width: 10,
+    height: 10,
+    fill: '#1976d2',
+    left: 0,
+    top: -10,
+    angle: 90,
+    originX: 'center',
+    originY: 'center'
+  });
+
+  // Punti di connessione
+  const inputPoint = new Circle({
+    left: -60,
+    top: 0,
+    radius: 5,
+    fill: '#0d47a1',
+    stroke: '#1976d2',
+    strokeWidth: 2,
+    originX: 'center',
+    originY: 'center'
+  });
+
+  const outputPoint = new Circle({
+    left: 60,
+    top: 0,
+    radius: 5,
+    fill: '#0d47a1',
+    stroke: '#1976d2',
+    strokeWidth: 2,
+    originX: 'center',
+    originY: 'center'
+  });
+
+  // Rettangolo per il testo
+  const textBg = new Rect({
+    width: 80,
+    height: 20,
+    fill: '#e3f2fd',
+    stroke: 'transparent',
+    originX: 'center',
+    originY: 'center',
+    top: 5
+  });
+
+  // Testo
+  const textbox = new Textbox('Trasporto', {
+    width: 80,
+    fontSize: 14,
+    textAlign: 'center',
+    fill: '#0d47a1',
+    originX: 'center',
+    originY: 'center',
+    top: 5
+  });
+
+  // Crea gruppo
   const group = new Group([rect, arrowShaft, arrowHead, inputPoint, outputPoint, textBg, textbox], {
     left: left,
     top: top,
@@ -39,6 +106,11 @@ export const createTransport = (canvas, left, top) => {
 };
 
 export const createTransportFromData = (canvas, node) => {
+  if (!node || typeof node.position_x !== 'number' || typeof node.position_y !== 'number') {
+    console.error('Invalid node data:', node);
+    return null;
+  }
+
   const transport = createTransport(canvas, node.position_x, node.position_y);
   if (transport) {
     transport.set('dbId', node.id);
@@ -54,10 +126,4 @@ export const createTransportFromData = (canvas, node) => {
     canvas.renderAll();
   }
   return transport;
-};
-
-export const initializeCanvasWithTransports = (canvas, transports) => {
-  transports.forEach(transport => {
-    createTransport(canvas, transport.left, transport.top);
-  });
 };

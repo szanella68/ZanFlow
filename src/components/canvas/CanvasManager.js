@@ -15,95 +15,144 @@ const CanvasManager = ({
   const [canvas, setCanvas] = useState(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
 
-  // Enhanced diagnostics function
+  // Comprehensive canvas diagnostics
   const performCanvasDiagnostics = (fabricCanvas) => {
+    console.group('🔍 Comprehensive Canvas Diagnostics');
+    
     if (!fabricCanvas) {
-      console.error('DIAGNOSTIC: No canvas object');
+      console.error('❌ No canvas object available');
+      console.groupEnd();
       return;
     }
 
-    console.group('🔍 Canvas Diagnostics');
     try {
-      console.log('Canvas Element:', canvasEl.current);
-      console.log('Canvas Dimensions:', {
-        width: fabricCanvas.getWidth(),
-        height: fabricCanvas.getHeight(),
+      // Canvas element details
+      console.log('Canvas DOM Element:', {
+        element: canvasEl.current,
         clientWidth: canvasEl.current?.clientWidth,
         clientHeight: canvasEl.current?.clientHeight,
-        windowInnerWidth: window.innerWidth,
-        windowInnerHeight: window.innerHeight
+        offsetWidth: canvasEl.current?.offsetWidth,
+        offsetHeight: canvasEl.current?.offsetHeight
       });
 
-      // Visibility and rendering checks
-      const canvasContainer = canvasEl.current?.parentElement;
-      console.log('Canvas Container Styles:', {
-        display: canvasContainer?.style.display,
-        visibility: canvasContainer?.style.visibility,
-        opacity: canvasContainer?.style.opacity
+      // Canvas fabric details
+      console.log('Canvas Fabric Details:', {
+        width: fabricCanvas.getWidth(),
+        height: fabricCanvas.getHeight(),
+        backgroundColor: fabricCanvas.backgroundColor
       });
 
-      // Check existing objects
+      // Container visibility
+      const container = canvasEl.current?.parentElement;
+      console.log('Container Styles:', {
+        display: container?.style.display,
+        visibility: container?.style.visibility,
+        opacity: container?.style.opacity,
+        width: container?.style.width,
+        height: container?.style.height
+      });
+
+      // Object analysis
       const objects = fabricCanvas.getObjects();
-      console.log('Existing Canvas Objects:', objects.length);
-      objects.forEach((obj, index) => {
-        console.log(`Object ${index}:`, {
+      console.log(`Canvas Objects (${objects.length}):`, 
+        objects.map((obj, index) => ({
+          index,
           type: obj.type,
+          objectType: obj.objectType,
           left: obj.left,
           top: obj.top,
           width: obj.width,
           height: obj.height
-        });
-      });
+        }))
+      );
+
     } catch (error) {
-      console.error('DIAGNOSTIC Error:', error);
+      console.error('❌ Diagnostic Error:', error);
     }
+    
     console.groupEnd();
   };
 
+  // Canvas initialization effect
   useEffect(() => {
     if (canvasEl.current && !canvas) {
       console.log('🚀 Initializing Canvas');
       
       try {
+        // Calculate dimensions dynamically
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const canvasWidth = windowWidth - 400;
+        const canvasHeight = windowHeight - 60;
+
         const fabricCanvas = new Canvas(canvasEl.current, {
-          width: window.innerWidth - 400,
-          height: window.innerHeight - 60,
+          width: canvasWidth,
+          height: canvasHeight,
           backgroundColor: '#f5f5f5',
           selection: true,
           preserveObjectStacking: true,
           renderOnAddRemove: true
         });
 
-        // Extensive logging for canvas creation
-        console.log('Canvas Created:', {
-          element: canvasEl.current,
-          fabricCanvas: fabricCanvas
+        // Extensive logging
+        console.log('Canvas Creation Details:', {
+          windowDimensions: { width: windowWidth, height: windowHeight },
+          canvasDimensions: { width: canvasWidth, height: canvasHeight }
         });
 
-        // Attach diagnostic listeners
+        // Event listeners for diagnostics and interactions
         fabricCanvas.on('after:render', () => {
           console.log('🎨 Canvas Rendered');
           performCanvasDiagnostics(fabricCanvas);
         });
 
+        // Object selection handling
+        fabricCanvas.on('selection:created', (e) => {
+          console.log('Object Selected:', e.selected?.[0]);
+          if (e.selected && e.selected.length > 0) {
+            onNodeSelected(e.selected[0]);
+          }
+        });
+
+        fabricCanvas.on('selection:updated', (e) => {
+          console.log('Object Updated:', e.selected?.[0]);
+          if (e.selected && e.selected.length > 0) {
+            onNodeSelected(e.selected[0]);
+          }
+        });
+
+        fabricCanvas.on('selection:cleared', () => {
+          console.log('Selection Cleared');
+          onNodeSelected(null);
+        });
+
+        // Set canvas state
         setCanvas(fabricCanvas);
         setIsCanvasReady(true);
 
         // Initial diagnostics
         performCanvasDiagnostics(fabricCanvas);
 
-        // Window resize handler
+        // Resize handler
         const handleResize = () => {
-          console.log('🖥️ Window Resized');
+          const newWidth = window.innerWidth - 400;
+          const newHeight = window.innerHeight - 60;
+          
+          console.log('🖥️ Window Resized', { 
+            width: newWidth, 
+            height: newHeight 
+          });
+
           fabricCanvas.setDimensions({
-            width: window.innerWidth - 400,
-            height: window.innerHeight - 60
+            width: newWidth,
+            height: newHeight
           });
           fabricCanvas.renderAll();
         };
 
         window.addEventListener('resize', handleResize);
 
+        // Cleanup
         return () => {
           window.removeEventListener('resize', handleResize);
           fabricCanvas.dispose();
@@ -111,9 +160,10 @@ const CanvasManager = ({
 
       } catch (error) {
         console.error('❌ Canvas Initialization Error:', error);
+        setIsCanvasReady(false);
       }
     }
-  }, [canvasEl, canvas]);
+  }, [canvasEl, canvas, onNodeSelected]);
 
   // Drag and drop handlers
   const handleDragOver = (e) => {
@@ -124,43 +174,36 @@ const CanvasManager = ({
   const handleDrop = async (e) => {
     e.preventDefault();
     
-    console.log('DEBUG: Drop avvenuto');
+    console.log('🖱️ Drop Event', {
+      currentProject: currentProject?.name,
+      canvasReady: isCanvasReady
+    });
     
-    // Se non c'è un progetto selezionato o il canvas non è inizializzato, mostra un messaggio di errore
     if (!currentProject) {
-      console.log('DEBUG: Progetto corrente non disponibile durante drop');
       alert('Seleziona o crea un progetto prima di aggiungere elementi');
       return;
     }
     
-    // Verifica che il canvas sia inizializzato
     if (!canvas) {
-      console.log('DEBUG: Canvas non inizializzato durante drop');
-      alert('Il canvas non è ancora pronto. Attendi qualche istante e riprova.');
+      alert('Canvas non ancora pronto');
       return;
     }
     
-    console.log('DEBUG: Drop con progetto corrente:', currentProject.name);
-    
-    // Recupera il tipo di strumento trascinato
     const toolType = e.dataTransfer.getData('toolType');
     if (!toolType) {
-      console.error('DEBUG: Nessun tipo di strumento disponibile nel drop');
+      console.error('❌ Nessun tipo di strumento identificato');
       return;
     }
-    
-    console.log('DEBUG: Tipo di strumento trascinato:', toolType);
-    
-    // Calcola la posizione del drop in modo sicuro
+
     try {
-      // Calcola la posizione in base all'offset del canvas
+      // Calculate drop position
       const rect = e.currentTarget.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       
-      console.log('DEBUG: Posizione drop calcolata:', { x, y });
-      
-      // Dati di base per ogni tipo di nodo
+      console.log('📍 Drop Position', { x, y });
+
+      // Base node data
       const baseNodeData = {
         name: toolType.charAt(0).toUpperCase() + toolType.slice(1),
         cycleTime: 0,
@@ -168,55 +211,44 @@ const CanvasManager = ({
         operators: 0,
         rejectRate: 0
       };
-      
-      // Crea l'oggetto appropriato in base al tipo di strumento
+
       let nodeData = { ...baseNodeData };
-      
-      console.log('DEBUG: Creazione oggetto per tipo:', toolType);
-      
-      try {
-        switch (toolType) {
-          case 'machine':
-            nodeData = {
-              ...nodeData,
-              throughputTime: 0,
-              supplier: 'interno',
-              hourlyCost: 0,
-              availability: 100
-            };
-            break;
-          case 'transport':
-            nodeData = {
-              ...nodeData,
-              transportType: 'manuale',
-              throughputTime: 0,
-              distance: 0,
-              minBatch: 1
-            };
-            break;
-          case 'storage':
-            nodeData = {
-              ...nodeData,
-              capacity: 0,
-              averageStayTime: 0,
-              managementMethod: 'FIFO',
-              storageCost: 0
-            };
-            break;
-          case 'connection':
-            console.log('DEBUG: Connessione selezionata, da implementare');
-            return;
-          default:
-            console.log('DEBUG: Tipo di strumento non riconosciuto');
-            return;
-        }
-      } catch (createError) {
-        console.error('DEBUG: Errore durante la creazione dell\'oggetto:', createError);
-        alert('Errore durante la creazione dell\'elemento. Riprova.');
-        return;
+
+      // Specific node type data
+      switch (toolType) {
+        case 'machine':
+          nodeData = {
+            ...nodeData,
+            throughputTime: 0,
+            supplier: 'interno',
+            hourlyCost: 0,
+            availability: 100
+          };
+          break;
+        case 'transport':
+          nodeData = {
+            ...nodeData,
+            transportType: 'manuale',
+            throughputTime: 0,
+            distance: 0,
+            minBatch: 1
+          };
+          break;
+        case 'storage':
+          nodeData = {
+            ...nodeData,
+            capacity: 0,
+            averageStayTime: 0,
+            managementMethod: 'FIFO',
+            storageCost: 0
+          };
+          break;
+        default:
+          console.error('❌ Tipo di strumento non supportato:', toolType);
+          return;
       }
-      
-      // Prepara i dati per il salvataggio nel database
+
+      // Prepare database node data
       const nodeForDb = {
         project_id: currentProject.id,
         node_type: toolType,
@@ -225,62 +257,60 @@ const CanvasManager = ({
         position_y: y,
         data: nodeData
       };
+
+      // Save node to database
+      const savedNode = await onNodeAdded(nodeForDb);
       
-      console.log('DEBUG: Tentativo di salvataggio nel database');
-      
-      // Salva il nodo nel database
-      try {
-        const savedNode = await onNodeAdded(nodeForDb);
+      if (savedNode && savedNode.id) {
+        // Create visual representation
+        const fabricObject = NodeFactory.createNodeFromData(canvas, {
+          ...savedNode,
+          position_x: x,
+          position_y: y
+        });
         
-        // Se il salvataggio ha successo, aggiungi l'oggetto al canvas
-        if (savedNode && savedNode.id) {
-          console.log('DEBUG: Nodo salvato nel DB, ID:', savedNode.id);
-          
-          // Usa NodeFactory per creare l'oggetto visivo
-          const fabricObject = NodeFactory.createNodeFromData(canvas, {
-            ...savedNode,
-            position_x: x,
-            position_y: y
-          });
-          
-          if (fabricObject) {
-            canvas.renderAll();
-            canvas.setActiveObject(fabricObject);
-            onNodeSelected(fabricObject);
-          } else {
-            console.error('Failed to create visual representation for node:', savedNode);
-          }
+        if (fabricObject) {
+          canvas.renderAll();
+          canvas.setActiveObject(fabricObject);
+          onNodeSelected(fabricObject);
+        } else {
+          console.error('❌ Creazione oggetto visivo fallita');
         }
-      } catch (saveError) {
-        console.error('DEBUG: Errore durante il salvataggio nel database:', saveError);
-        alert('Errore nel salvataggio dell\'elemento. Riprova.');
       }
+
     } catch (error) {
-      console.error('DEBUG: Errore globale durante il processo di drop:', error);
+      console.error('❌ Errore durante il drop:', error);
       alert('Si è verificato un errore. Riprova.');
     }
   };
 
-  // Enhanced Test Button Handler
+  // Test icon creation method
   const handleTestMachineIcon = () => {
     if (!canvas || !isCanvasReady) {
-      console.error('❌ Canvas Not Ready for Machine Icon');
+      console.error('❌ Canvas non pronto per la creazione');
       return;
     }
 
-    console.group('🏭 Machine Icon Test');
+    console.group('🏭 Test Machine Icon');
     try {
       // Force canvas visibility
       if (canvasEl.current) {
-        canvasEl.current.style.border = '3px solid red';
-        canvasEl.current.style.visibility = 'visible';
-        canvasEl.current.style.opacity = '1';
+        const container = canvasEl.current.parentElement;
+        if (container) {
+          container.style.width = '100%';
+          container.style.height = '100%';
+          container.style.visibility = 'visible';
+        }
+
+        // Reset canvas dimensions
+        canvas.setWidth(window.innerWidth - 400);
+        canvas.setHeight(window.innerHeight - 60);
       }
 
-      // Create machine with detailed logging
+      // Create machine icon
       const machineIcon = createMachine(canvas, 200, 200);
       
-      console.log('Machine Icon Created:', {
+      console.log('Machine Icon Details:', {
         icon: machineIcon,
         left: machineIcon?.left,
         top: machineIcon?.top,
@@ -288,31 +318,31 @@ const CanvasManager = ({
         height: machineIcon?.height
       });
 
-      // Force rendering with maximum verbosity
+      // Force rendering
       canvas.renderAll();
       
-      // Perform diagnostics after rendering
+      // Diagnostics
       performCanvasDiagnostics(canvas);
 
     } catch (error) {
-      console.error('❌ Machine Icon Creation Error:', error);
+      console.error('❌ Errore creazione icona macchina:', error);
     }
     console.groupEnd();
   };
 
-  // Synchronize nodes when project or nodes change
+  // Node synchronization effect
   useEffect(() => {
     if (!isCanvasReady || !canvas || !currentProject || !Array.isArray(nodes)) {
-      console.log('Canvas not ready or invalid data for synchronization:', {
-        isCanvasReady, 
-        canvas: !!canvas, 
-        currentProject: !!currentProject, 
-        nodesArray: Array.isArray(nodes)
+      console.log('❌ Sincronizzazione nodi non possibile', {
+        canvasReady: isCanvasReady,
+        canvasExists: !!canvas,
+        projectSelected: !!currentProject,
+        nodesValid: Array.isArray(nodes)
       });
       return;
     }
     
-    console.log('Synchronizing nodes with canvas...', nodes.length);
+    console.log(`🔄 Sincronizzazione ${nodes.length} nodi`);
     
     try {
       // Remove existing objects
@@ -327,15 +357,15 @@ const CanvasManager = ({
             const obj = NodeFactory.createNodeFromData(canvas, node);
             if (obj) successCount++;
           } catch (err) {
-            console.error('Error creating node:', node, err);
+            console.error('❌ Errore creazione nodo:', node, err);
           }
         });
         
-        console.log(`Synchronized ${successCount}/${nodes.length} nodes`);
+        console.log(`✅ Sincronizzati ${successCount}/${nodes.length} nodi`);
         canvas.renderAll();
       }, 100);
     } catch (error) {
-      console.error('Error during node synchronization:', error);
+      console.error('❌ Errore sincronizzazione nodi:', error);
     }
   }, [isCanvasReady, canvas, nodes, currentProject]);
 
@@ -357,12 +387,12 @@ const CanvasManager = ({
       />
 
       {!isCanvasReady && (
-        <div className="canvas-loading">Initializing canvas...</div>
+        <div className="canvas-loading">Inizializzazione del canvas...</div>
       )}
 
       {isCanvasReady && !currentProject && (
         <div className="canvas-message">
-          <p>Select or create a project from the File menu</p>
+          <p>Seleziona o crea un progetto dal menu File</p>
         </div>
       )}
 
