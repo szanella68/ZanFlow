@@ -1,39 +1,57 @@
 import React, { useState } from 'react';
 import './App.css';
-import Canvas from './components/canvas/Canvas';
+import CanvasManager from './components/canvas/CanvasManager';
 import TopMenu from './components/menus/TopMenu';
 import ToolsPanel from './components/panels/ToolsPanel';
 import PropertiesPanel from './components/panels/PropertiesPanel';
-// Assicurati di aver creato la cartella src/context prima di usare questa importazione
-import { ProjectProvider } from './context/ProjectContext';
+import { ProjectProvider, useProject } from './context/ProjectContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
-function App() {
+const AppContent = () => {
   const [selectedTool, setSelectedTool] = useState(null);
   const [selectedObject, setSelectedObject] = useState(null);
+  const { currentProject, nodes, addNode, updateNode } = useProject();
 
   const handleSelectTool = (toolType) => {
-    console.log('Tool selected:', toolType); // Debug log
     setSelectedTool(toolType);
   };
 
-  const handleSelectObject = (object) => {
-    console.log('Object selected:', object); // Debug log
+  const handleNodeSelected = (object) => {
     setSelectedObject(object);
   };
 
+  const handleNodeAdded = (nodeData, callback) => {
+    addNode(nodeData).then(newNode => {
+      if (callback && newNode) {
+        callback(newNode);
+      }
+    });
+  };
+
+  return (
+    <div className="App">
+      <TopMenu />
+      <div className="main-container">
+        <ToolsPanel onSelectTool={handleSelectTool} />
+        <ErrorBoundary>
+          <CanvasManager
+            currentProject={currentProject}
+            nodes={nodes}
+            onNodeAdded={handleNodeAdded}
+            onNodeUpdated={updateNode}
+            onNodeSelected={handleNodeSelected}
+          />
+        </ErrorBoundary>
+        <PropertiesPanel selectedObject={selectedObject} />
+      </div>
+    </div>
+  );
+};
+
+function App() {
   return (
     <ProjectProvider>
-      <div className="App">
-        <TopMenu />
-        <div className="main-container">
-          <ToolsPanel onSelectTool={handleSelectTool} />
-          <Canvas 
-            selectedTool={selectedTool} 
-            onSelectObject={handleSelectObject} 
-          />
-          <PropertiesPanel selectedObject={selectedObject} />
-        </div>
-      </div>
+      <AppContent />
     </ProjectProvider>
   );
 }
