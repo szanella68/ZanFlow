@@ -1,13 +1,16 @@
-import { createMachine } from './Machine';
-import createTransport from './Transport';
-import createStorage from './Storage';
+import { createMachine, createMachineFromData } from './Machine';
+import createTransport, { createTransportFromData } from './Transport';
+import { createStorage, createStorageFromData } from './Storage';
 
 // Funzione unificata per creare nodi dal database
 export const createNodeFromData = (canvas, node) => {
-  if (!canvas || !node) return null;
+  if (!canvas || !node) {
+    console.error('Canvas or node is invalid:', { canvas, node });
+    return null;
+  }
   
   try {
-    console.log(`Creazione nodo di tipo ${node.node_type} dalla configurazione DB`);
+    console.log(`Creating node of type "${node.node_type}" from database configuration`, node);
     
     // Estrai posizione e tipo dal nodo del database
     const { position_x, position_y, node_type, data, id } = node;
@@ -27,21 +30,25 @@ export const createNodeFromData = (canvas, node) => {
     
     switch (node_type) {
       case 'machine':
-        fabricObject = createMachine(canvas, position_x, position_y);
+        console.log('Creating a machine node...');
+        fabricObject = createMachineFromData(canvas, node);
         break;
       case 'transport':
-        fabricObject = createTransport(canvas, position_x, position_y);
+        console.log('Creating a transport node...');
+        fabricObject = createTransportFromData(canvas, node);
         break;
       case 'storage':
-        fabricObject = createStorage(canvas, position_x, position_y);
+        console.log('Creating a storage node...');
+        fabricObject = createStorageFromData(canvas, node);
         break;
       default:
-        console.error('Tipo di nodo non supportato:', node_type);
+        console.error('Unsupported node type:', node_type);
         return null;
     }
     
     // Se l'oggetto è stato creato con successo, aggiorna i suoi dati
     if (fabricObject) {
+      console.log('Node successfully created:', fabricObject);
       // Collega l'ID del database all'oggetto
       fabricObject.set('dbId', id);
       
@@ -57,11 +64,19 @@ export const createNodeFromData = (canvas, node) => {
           }
         });
       }
+
+      // Verifica se l'oggetto ha un'icona associata
+      if (!fabricObject.icon) {
+        console.warn(`Icon missing for node type "${node_type}". Setting a default icon.`);
+        fabricObject.icon = 'default-icon.png'; // Imposta un'icona predefinita
+      }
+    } else {
+      console.warn('Node creation failed for:', node);
     }
     
     return fabricObject;
   } catch (error) {
-    console.error('Errore durante la creazione del nodo dal database:', error);
+    console.error('Error during node creation from database:', error);
     return null;
   }
 };
@@ -69,12 +84,12 @@ export const createNodeFromData = (canvas, node) => {
 // Funzione per inizializzare il canvas con i nodi
 export const initializeCanvasWithNodes = (canvas, nodes) => {
   if (!canvas || !Array.isArray(nodes)) {
-    console.error('Canvas o nodi non validi per l\'inizializzazione');
+    console.error('Invalid canvas or nodes for initialization:', { canvas, nodes });
     return;
   }
   
   try {
-    console.log(`Inizializzazione canvas con ${nodes.length} nodi`);
+    console.log(`Initializing canvas with ${nodes.length} nodes`, nodes);
     
     // Pulisci il canvas in modo sicuro
     canvas.clear();
@@ -89,20 +104,24 @@ export const initializeCanvasWithNodes = (canvas, nodes) => {
       }
     }
     
-    console.log(`Creati con successo ${successCount}/${nodes.length} nodi`);
+    console.log(`Successfully created ${successCount}/${nodes.length} nodes`);
     
     // Renderizza il canvas
     canvas.renderAll();
   } catch (error) {
-    console.error('Errore durante l\'inizializzazione del canvas con i nodi:', error);
+    console.error('Error during canvas initialization with nodes:', error);
   }
 };
 
 // Funzione per aggiornare un nodo esistente
 export const updateNodeObject = (fabricObject, updatedData) => {
-  if (!fabricObject) return;
+  if (!fabricObject) {
+    console.error('Invalid fabric object for update:', fabricObject);
+    return;
+  }
   
   try {
+    console.log('Updating node object with new data:', updatedData);
     // Aggiorna i dati dell'oggetto
     fabricObject.set('data', updatedData);
     
@@ -119,8 +138,9 @@ export const updateNodeObject = (fabricObject, updatedData) => {
     if (fabricObject.canvas) {
       fabricObject.canvas.renderAll();
     }
+    console.log('Node object successfully updated:', fabricObject);
   } catch (error) {
-    console.error('Errore durante l\'aggiornamento del nodo:', error);
+    console.error('Error during node update:', error);
   }
 };
 
