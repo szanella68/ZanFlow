@@ -1,6 +1,6 @@
 import { Circle, Rect, Group, Textbox } from 'fabric';
 
-const createMachine = (canvas, left, top) => {
+export const createMachine = (canvas, left, top) => {
   console.group('🏭 Machine Icon Creation');
   
   // Validate canvas
@@ -144,4 +144,35 @@ const createMachine = (canvas, left, top) => {
   }
 };
 
-export { createMachine };
+export const createMachineFromData = (canvas, node) => {
+  if (!node || typeof node.position_x !== 'number' || typeof node.position_y !== 'number') {
+    console.error('Invalid node data:', node);
+    return null;
+  }
+
+  const machine = createMachine(canvas, node.position_x, node.position_y);
+  if (machine) {
+    machine.set('dbId', node.id);
+    const data = node.data || machine.data;
+    machine.set('data', data);
+    if (machine._objects) {
+      machine._objects.forEach(obj => {
+        if (obj.type === 'textbox') {
+          obj.set('text', data.name || 'Macchina');
+        }
+      });
+    }
+    console.log('Machine created from data:', machine);
+    canvas.renderAll();
+  } else {
+    console.error('Failed to create machine from data:', node);
+  }
+
+  return machine;
+};
+
+export const initializeCanvasWithMachines = (canvas, machines) => {
+  machines.forEach(machine => {
+    createMachine(canvas, machine.left, machine.top);
+  });
+};

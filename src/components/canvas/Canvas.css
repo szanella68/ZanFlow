@@ -1,11 +1,10 @@
 .canvas-container {
   flex: 1;
-  overflow: visible;
+  overflow: auto;
   position: relative;
-  border: 3px solid blue !important;
-  background-color: #f0f0f0 !important;
-  min-height: 500px;
-  width: 100%;
+  border: 1px solid #ccc;
+  background-color: #f5f5f5;
+  cursor: default;
 }
 
 .canvas-container[data-tool] {
@@ -14,20 +13,6 @@
 
 .canvas-container-ready {
   border: 1px dashed #3aafa9;
-}
-
-canvas {
-  border: 3px solid green !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-}
-
-#canvas {
-  border: 3px solid red !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
 }
 
 .test-button {

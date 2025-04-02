@@ -1,5 +1,5 @@
 import { createMachine, createMachineFromData } from './Machine';
-import createTransport, { createTransportFromData } from './Transport';
+import { createTransport, createTransportFromData } from './Transport';
 import { createStorage, createStorageFromData } from './Storage';
 
 // Funzione unificata per creare nodi dal database
@@ -64,13 +64,6 @@ export const createNodeFromData = (canvas, node) => {
           }
         });
       }
-
-      // RIMOZIONE DEL CONTROLLO DELL'ICONA CHE GENERA L'AVVISO
-      // La seguente sezione è stata rimossa:
-      // if (!fabricObject.icon) {
-      //   console.warn(`Icon missing for node type "${node_type}". Setting a default icon.`);
-      //   fabricObject.icon = 'default-icon.png';
-      // }
     } else {
       console.warn('Node creation failed for:', node);
     }
