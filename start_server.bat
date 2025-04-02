@@ -21,7 +21,7 @@ echo Attendi l'avvio dei servizi...
 ping -n 6 127.0.0.1 >nul
 
 :: Vai alla directory del progetto backend
-cd "C:\filepubblici\ZanFlow\zanflow"
+cd "C:\filepubblici\ZanFlow"
 
 :: Avvia il server backend Node.js in una finestra separata
 echo Avvio del server backend (porta 3002)...

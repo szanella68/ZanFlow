@@ -2,7 +2,7 @@
 echo ===== CARICAMENTO MODIFICHE SU GITHUB =====
 echo.
 
-cd /d C:\filepubblici\zanflow
+cd /d C:\filepubblici\ZanFlow
 
 echo Verifico lo stato delle modifiche...
 git status

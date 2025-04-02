@@ -1,3 +1,4 @@
+// src/components/icons/IconFactory.js
 import { createMachine } from './Machine';
 import createTransport from './Transport';
 import createStorage from './Storage';
@@ -118,8 +119,9 @@ const IconFactory = {
       return;
     }
     
-    if (typeof canvas.clear !== 'function') {
-      console.error('DEBUG: Canvas senza metodo clear in initializeCanvasWithNodes');
+    // Verifica che il canvas abbia i metodi necessari
+    if (typeof canvas.clear !== 'function' || typeof canvas.renderAll !== 'function') {
+      console.error('DEBUG: Canvas senza metodi richiesti in initializeCanvasWithNodes');
       return;
     }
     
@@ -158,13 +160,15 @@ const IconFactory = {
       
       console.log(`DEBUG: Ricreati con successo ${successCount}/${nodes.length} nodi`);
       
-      // Richiedi il render del canvas alla fine
-      console.log('DEBUG: Richiesta renderizzazione canvas');
-      try {
-        canvas.renderAll();
-        console.log('DEBUG: Canvas renderizzato con successo');
-      } catch (renderError) {
-        console.error('DEBUG: Errore durante renderAll:', renderError);
+      // Richiedi il render del canvas alla fine se c'è almeno un nodo che è stato creato con successo
+      if (successCount > 0) {
+        console.log('DEBUG: Richiesta renderizzazione canvas');
+        try {
+          canvas.renderAll();
+          console.log('DEBUG: Canvas renderizzato con successo');
+        } catch (renderError) {
+          console.error('DEBUG: Errore durante renderAll:', renderError);
+        }
       }
     } catch (error) {
       console.error('DEBUG: Errore globale in initializeCanvasWithNodes:', error);
