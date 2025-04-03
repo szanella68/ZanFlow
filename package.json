@@ -2,7 +2,7 @@
   "name": "zanflow",
   "version": "0.1.0",
   "private": true,
-  "homepage": "http://zanserver.sytes.net:3001",
+  "homepage": ".",
   "proxy": "http://localhost:3002",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
@@ -25,9 +25,9 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "set DANGEROUSLY_DISABLE_HOST_CHECK=true && react-scripts --openssl-legacy-provider start",
-    "build": "react-scripts --openssl-legacy-provider build",
-    "test": "react-scripts --openssl-legacy-provider test",
+   "start": "react-scripts start",
+   "build": "react-scripts build",
+   "test": "react-scripts test",
     "eject": "react-scripts eject",
     "server": "nodemon server/server.js"
   },
