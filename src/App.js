@@ -6,7 +6,7 @@ import ToolsPanel from './components/panels/ToolsPanel';
 import TopMenu from './components/menus/TopMenu';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useProject } from './context/ProjectContext';
-import { fetchNodes, createNode, updateNode } from './services/api';
+import { fetchNodes, createNode, updateNode, deleteNode } from './services/api';
 import './App.css';
 import './components/canvas/Canvas.css';
 import './components/panels/Panels.css';
@@ -115,6 +115,102 @@ const App = () => {
       throw err;
     }
   };
+  
+  const handleNodeDeleted = async (nodeId) => {
+    if (!nodeId) {
+      console.error('Nessun nodo da eliminare');
+      return false;
+    }
+    
+    try {
+      // Ottieni informazioni sul nodo da eliminare per un messaggio più informativo
+      const nodeToRemove = nodes.find(n => n.id === nodeId);
+      const nodeName = nodeToRemove ? nodeToRemove.name : 'elemento';
+      const nodeType = nodeToRemove ? nodeToRemove.node_type : 'elemento';
+      
+      console.log('Eliminazione nodo:', nodeId, nodeName, nodeType);
+      
+      // Prima rimuovi l'oggetto dal canvas
+      if (canvasRef.current) {
+        const canvas = canvasRef.current.getCanvas();
+        if (canvas) {
+          // Trova l'oggetto nel canvas
+          const objects = canvas.getObjects();
+          const nodeToDelete = objects.find(obj => obj.id === nodeId);
+          
+          if (nodeToDelete) {
+            canvas.remove(nodeToDelete);
+            canvas.renderAll();
+            console.log('Nodo rimosso dal canvas');
+          }
+        }
+      }
+      
+      // Poi elimina il nodo dal database
+      const success = await deleteNode(nodeId);
+      
+      if (success) {
+        console.log('Nodo eliminato con successo dal database:', nodeId);
+        
+        // Rimuovi il nodo dall'array di nodi
+        setNodes((prev) => prev.filter((n) => n.id !== nodeId));
+        
+        // Resetta la selezione corrente
+        setSelectedObject(null);
+        
+        // Segna le modifiche come non salvate
+        setHasUnsavedChanges(true);
+        
+        // Mostra una notifica di successo
+        const notification = document.createElement('div');
+        notification.textContent = `${nodeType.charAt(0).toUpperCase() + nodeType.slice(1)} "${nodeName}" eliminato con successo`;
+        notification.className = 'save-notification';
+        notification.style.backgroundColor = '#4CAF50';
+        document.body.appendChild(notification);
+        
+        // Fade in
+        setTimeout(() => {
+          notification.style.opacity = '1';
+        }, 10);
+        
+        // Fade out e rimozione
+        setTimeout(() => {
+          notification.style.opacity = '0';
+          setTimeout(() => {
+            document.body.removeChild(notification);
+          }, 300);
+        }, 3000);
+        
+        return true;
+      } else {
+        console.error('Errore nell\'eliminazione del nodo dal database:', nodeId);
+        // Mostra una notifica di errore
+        const notification = document.createElement('div');
+        notification.textContent = `Errore durante l'eliminazione di "${nodeName}"`;
+        notification.className = 'save-notification';
+        notification.style.backgroundColor = '#F44336';
+        document.body.appendChild(notification);
+        
+        // Fade in
+        setTimeout(() => {
+          notification.style.opacity = '1';
+        }, 10);
+        
+        // Fade out e rimozione
+        setTimeout(() => {
+          notification.style.opacity = '0';
+          setTimeout(() => {
+            document.body.removeChild(notification);
+          }, 300);
+        }, 3000);
+        
+        return false;
+      }
+    } catch (err) {
+      console.error('Errore durante l\'eliminazione del nodo:', err);
+      throw err;
+    }
+  };
 
   const handleSelectTool = (tool) => {
     console.log('🔧 Tool selezionato:', tool);
@@ -195,10 +291,44 @@ const App = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [hasUnsavedChanges]);
+  
+  // Gestione degli shortcut da tastiera
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // CTRL+S o CMD+S per salvare
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (currentProject) {
+          saveAllChanges();
+        }
+      }
+      
+      // Tasto Delete o Backspace per eliminare il nodo selezionato
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObject && selectedObject.id) {
+        // Evita di eliminare quando si sta scrivendo in un input
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          if (window.confirm('Sei sicuro di voler eliminare questo elemento?')) {
+            handleNodeDeleted(selectedObject.id);
+          }
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [currentProject, selectedObject, saveAllChanges, handleNodeDeleted]);
 
   return (
     <div className="App">
-      <TopMenu onSave={saveAllChanges} hasUnsavedChanges={hasUnsavedChanges} />
+      <TopMenu 
+        onSave={saveAllChanges} 
+        hasUnsavedChanges={hasUnsavedChanges} 
+        selectedObject={selectedObject} 
+        onDeleteNode={handleNodeDeleted} 
+      />
       <div className="main-container">
         <ToolsPanel onSelectTool={handleSelectTool} />
         
@@ -211,6 +341,7 @@ const App = () => {
             onNodeSelected={setSelectedObject}
             onNodeUpdated={handleNodeUpdated}
             onNodeMoved={handleNodeMoved}
+            onNodeDeleted={handleNodeDeleted}
             activeTool={activeTool}
           />
         </ErrorBoundary>

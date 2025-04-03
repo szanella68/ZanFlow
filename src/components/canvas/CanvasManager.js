@@ -12,6 +12,7 @@ const CanvasManager = forwardRef(({
   onNodeSelected, 
   onNodeUpdated,
   onNodeMoved,
+  onNodeDeleted,
   activeTool 
 }, ref) => {
   const canvasEl = useRef(null);
@@ -76,7 +77,20 @@ const CanvasManager = forwardRef(({
       setUnsavedChanges(false);
       return true;
     },
-    getCanvas: () => canvasInstance.current
+    getCanvas: () => canvasInstance.current,
+    deleteSelectedNode: () => {
+      const canvas = canvasInstance.current;
+      if (!canvas) return false;
+      
+      const activeObject = canvas.getActiveObject();
+      if (!activeObject || !activeObject.id) return false;
+      
+      // Rimuove l'oggetto dal canvas
+      canvas.remove(activeObject);
+      canvas.renderAll();
+      
+      return true;
+    }
   }), []);
 
   // Inizializzazione del canvas - separata e con dipendenze minime
@@ -326,7 +340,13 @@ const CanvasManager = forwardRef(({
   };
 
   return (
-    <div className="canvas-container" onDragOver={handleDragOver} onDrop={handleDrop}>
+    <div 
+      className="canvas-container" 
+      onDragOver={handleDragOver} 
+      onDrop={handleDrop}
+      tabIndex="0" // Necessario per ricevere eventi di tastiera
+      onFocus={() => console.log('Canvas container focused')}
+    >
       <canvas ref={canvasEl} id="fabric-canvas" />
       {!isCanvasReady && <div className="canvas-loading">Inizializzazione del canvas...</div>}
       {isCanvasReady && !currentProject && (

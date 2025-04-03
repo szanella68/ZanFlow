@@ -168,6 +168,32 @@ app.get('/api/projects/:projectId/connections', async (req, res) => {
   }
 });
 
+// Endpoint per eliminare un nodo
+app.delete('/api/nodes/:nodeId', async (req, res) => {
+  try {
+    const { nodeId } = req.params;
+    
+    // Prima verifica se il nodo esiste
+    const [nodeExists] = await pool.query('SELECT id FROM nodes WHERE id = ?', [nodeId]);
+    
+    if (nodeExists.length === 0) {
+      return res.status(404).json({ error: 'Node not found' });
+    }
+    
+    // Procedi con l'eliminazione
+    const [result] = await pool.query('DELETE FROM nodes WHERE id = ?', [nodeId]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(500).json({ error: 'Failed to delete node' });
+    }
+    
+    res.status(200).json({ success: true, message: `Node ${nodeId} deleted successfully` });
+  } catch (error) {
+    console.error('Error deleting node', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.post('/api/connections', async (req, res) => {
   try {
     const { project_id, start_node_id, end_node_id } = req.body;

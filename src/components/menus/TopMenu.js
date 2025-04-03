@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import './TopMenu.css';
 import { useProject } from '../../context/ProjectContext';
 
-const TopMenu = ({ onSave, hasUnsavedChanges }) => {
+const TopMenu = ({ onSave, hasUnsavedChanges, selectedObject, onDeleteNode }) => {
   const { projects, currentProject, selectProject, addProject, loadProjects } = useProject();
   const [showProjectList, setShowProjectList] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
@@ -108,7 +108,20 @@ const TopMenu = ({ onSave, hasUnsavedChanges }) => {
         <div className="dropdown-content">
           <button>Annulla</button>
           <button>Ripeti</button>
-          <button>Elimina</button>
+          <button 
+            onClick={() => {
+              if (selectedObject && selectedObject.id && onDeleteNode) {
+                if (window.confirm('Sei sicuro di voler eliminare questo elemento?')) {
+                  onDeleteNode(selectedObject.id);
+                }
+              } else {
+                alert('Seleziona prima un elemento da eliminare');
+              }
+            }} 
+            disabled={!selectedObject}
+          >
+            Elimina
+          </button>
         </div>
       </div>
       

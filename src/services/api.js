@@ -41,7 +41,8 @@ export async function updateNode(id, data) {
 
 export async function deleteNode(id) {
   const res = await fetch(`${API_BASE}/nodes/${id}`, {
-    method: 'DELETE' });
+    method: 'DELETE' 
+  });
   return res.ok;
 }
 
