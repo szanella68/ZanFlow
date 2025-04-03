@@ -2,6 +2,7 @@
   "name": "zanflow",
   "version": "0.1.0",
   "private": true,
+  "homepage": "http://zanserver.sytes.net:3001",
   "proxy": "http://localhost:3002",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
@@ -28,7 +29,7 @@
     "build": "react-scripts --openssl-legacy-provider build",
     "test": "react-scripts --openssl-legacy-provider test",
     "eject": "react-scripts eject",
-    "server": "nodemon server/index.js"
+    "server": "nodemon server/server.js"
   },
   "eslintConfig": {
     "extends": [

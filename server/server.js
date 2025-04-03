@@ -7,7 +7,14 @@ const app = express();
 const port = process.env.PORT || 3002;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://zanserver.sytes.net:3001', 
+    'http://localhost:3001'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(bodyParser.json());
 
 // Configurazione del database
@@ -176,6 +183,6 @@ app.post('/api/connections', async (req, res) => {
 });
 
 // Avvio del server
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });

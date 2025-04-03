@@ -69,19 +69,10 @@ const NodeFactory = {
           hasBorders: true
         });
         
-        // Aggiorna il posizionamento del testo
-        if (fabricObject._objects) {
-          const textbox = fabricObject._objects.find(o => o.type === 'textbox');
-          if (textbox) {
-            // Assicurati che il testo sia centrato
-            textbox.set({
-              originX: 'center',
-              originY: 'center',
-              left: fabricObject.width / 2,
-              top: fabricObject.height / 2,
-              textAlign: 'center'
-            });
-          }
+        // Eventuali aggiustamenti specifici per il tipo di nodo
+        if (nodeData.node_type === 'machine') {
+          // Configurazione specifica per machine...
+          fabricObject.hoverCursor = 'move';
         }
         
         console.log(`✅ Nodo creato con successo:`, fabricObject);
@@ -95,6 +86,17 @@ const NodeFactory = {
     }
 
     return fabricObject;
+  },
+  
+  // Metodo per creare una connessione tra due nodi
+  createConnection: (canvas, startNode, endNode) => {
+    if (!canvas || !startNode || !endNode) return null;
+    
+    // Implementazione per creare la connessione...
+    // Sarà sviluppata in futuro
+    
+    console.log('Richiesta connessione tra:', startNode.id, 'e', endNode.id);
+    return null;
   }
 };
 

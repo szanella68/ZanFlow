@@ -15,7 +15,7 @@ export const ProjectProvider = ({ children }) => {
 
   const loadProjects = async () => {
     try {
-      const res = await fetch('/api/projects');
+      const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/projects`);
       const data = await res.json();
       setProjects(data);
     } catch (err) {

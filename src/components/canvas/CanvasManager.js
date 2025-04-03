@@ -1,117 +1,181 @@
 // FILE: CanvasManager.js
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Canvas, Rect, Shadow }  from 'fabric';
 
 import './Canvas.css';
 import NodeFactory from '../icons/NodeFactory';
 
-const setupSelectionListeners = (fabricCanvas, onNodeSelected) => {
-  fabricCanvas.off('selection:created');
-  fabricCanvas.off('selection:updated');
-  fabricCanvas.off('selection:cleared');
-
-  fabricCanvas.on('selection:created', (e) => {
-    const selected = e.selected?.[0];
-    if (selected && typeof onNodeSelected === 'function') {
-      onNodeSelected(selected);
-      console.log('🎯 Nodo selezionato (created):', selected);
-    }
-  });
-
-  fabricCanvas.on('selection:updated', (e) => {
-    const selected = e.selected?.[0];
-    if (selected && typeof onNodeSelected === 'function') {
-      onNodeSelected(selected);
-      console.log('🔄 Nodo selezionato (updated):', selected);
-    }
-  });
-
-  fabricCanvas.on('selection:cleared', () => {
-    if (typeof onNodeSelected === 'function') {
-      onNodeSelected(null);
-      console.log('🚫 Selezione annullata');
-    }
-  });
-};
-
-const CanvasManager = ({ 
+const CanvasManager = forwardRef(({ 
   currentProject, 
   nodes, 
   onNodeAdded, 
   onNodeSelected, 
-  onNodeUpdated 
-}) => {
+  onNodeUpdated,
+  onNodeMoved,
+  activeTool 
+}, ref) => {
   const canvasEl = useRef(null);
   const canvasInstance = useRef(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
 
-  // Inizializzazione del canvas
-  useEffect(() => {
-    if (canvasEl.current && !canvasInstance.current) {
-      console.log('🚀 Initializing Canvas');
-      try {
-        const container = canvasEl.current.parentElement;
-        // Imposta dimensioni ragionevoli per il canvas
-        const w = container.clientWidth || window.innerWidth - 400;
-        const h = container.clientHeight || window.innerHeight - 60;
+  // Separare setupEventListeners come una funzione all'interno del componente
+  // ma memoizzata con useCallback per evitare ri-creazioni
+  const setupEventListeners = useCallback((fabricCanvas) => {
+    if (!fabricCanvas) return;
+    
+    // Pulisce i listener esistenti
+    fabricCanvas.off('selection:created');
+    fabricCanvas.off('selection:updated');
+    fabricCanvas.off('selection:cleared');
+    fabricCanvas.off('object:modified');
 
-        console.log('Dimensioni canvas:', { w, h });
-
-        const fabricCanvas = new Canvas(canvasEl.current, {
-          width: w,
-          height: h,
-          backgroundColor: '#f5f5f5',
-          selection: true,
-          preserveObjectStacking: true,
-          renderOnAddRemove: true
-        });
-
-        // Test: aggiungi un rettangolo per verificare che il canvas funzioni
-        const rect = new Rect({
-          left: 50,
-          top: 50,
-          width: 50,
-          height: 50,
-          fill: 'red',
-          stroke: 'blue',
-          strokeWidth: 2,
-          shadow: new Shadow({
-            color: 'rgba(0,0,0,0.3)',
-            blur: 10,
-            offsetX: 5,
-            offsetY: 5
-          })
-        });
-        fabricCanvas.add(rect);
-        fabricCanvas.renderAll();
-
-        canvasInstance.current = fabricCanvas;
-        setIsCanvasReady(true);
-        setupSelectionListeners(fabricCanvas, onNodeSelected);
-
-        // Handler per il ridimensionamento
-        const handleResize = () => {
-          const container = canvasEl.current.parentElement;
-          const newWidth = container.clientWidth || window.innerWidth - 400;
-          const newHeight = container.clientHeight || window.innerHeight - 60;
-          fabricCanvas.setDimensions({ width: newWidth, height: newHeight });
-          fabricCanvas.renderAll();
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => {
-          window.removeEventListener('resize', handleResize);
-          fabricCanvas.dispose();
-          canvasInstance.current = null;
-        };
-      } catch (error) {
-        console.error('❌ Canvas Initialization Error:', error);
-        setIsCanvasReady(false);
+    // Listener per la selezione
+    fabricCanvas.on('selection:created', (e) => {
+      const selected = e.selected?.[0];
+      if (selected && typeof onNodeSelected === 'function') {
+        onNodeSelected(selected);
+        console.log('🎯 Nodo selezionato (created):', selected);
       }
-    }
-  }, [canvasEl, onNodeSelected]);
+    });
 
-  // Sincronizzazione dei nodi quando cambiano
+    fabricCanvas.on('selection:updated', (e) => {
+      const selected = e.selected?.[0];
+      if (selected && typeof onNodeSelected === 'function') {
+        onNodeSelected(selected);
+        console.log('🔄 Nodo selezionato (updated):', selected);
+      }
+    });
+
+    fabricCanvas.on('selection:cleared', () => {
+      if (typeof onNodeSelected === 'function') {
+        onNodeSelected(null);
+        console.log('🚫 Selezione annullata');
+      }
+    });
+
+    // Nuovo listener per il movimento degli oggetti
+    fabricCanvas.on('object:modified', (e) => {
+      const modifiedObj = e.target;
+      if (modifiedObj && modifiedObj.id && typeof onNodeMoved === 'function') {
+        // Estrai le nuove coordinate
+        const newPos = {
+          position_x: modifiedObj.left,
+          position_y: modifiedObj.top
+        };
+        
+        console.log('📍 Oggetto spostato:', modifiedObj.id, newPos);
+        onNodeMoved(modifiedObj.id, newPos);
+      }
+    });
+  }, [onNodeSelected, onNodeMoved]);
+
+  // Esponiamo il metodo saveChanges e getCanvas tramite ref
+  useImperativeHandle(ref, () => ({
+    saveChanges: () => {
+      setUnsavedChanges(false);
+      return true;
+    },
+    getCanvas: () => canvasInstance.current
+  }), []);
+
+  // Inizializzazione del canvas - separata e con dipendenze minime
+  useEffect(() => {
+    // Se il canvas è già stato inizializzato, esco subito
+    if (canvasInstance.current) return;
+    
+    // Se l'elemento DOM non esiste ancora, esco
+    if (!canvasEl.current) return;
+
+    console.log('🚀 Initializing Canvas');
+    try {
+      const container = canvasEl.current.parentElement;
+      // Imposta dimensioni ragionevoli per il canvas (non usare variabili di stato qui)
+      const w = container.clientWidth || window.innerWidth - 400;
+      const h = container.clientHeight || window.innerHeight - 60;
+
+      console.log('Dimensioni canvas:', { w, h });
+
+      const fabricCanvas = new Canvas(canvasEl.current, {
+        width: w,
+        height: h,
+        backgroundColor: '#f5f5f5',
+        selection: true,
+        preserveObjectStacking: true,
+        renderOnAddRemove: true
+      });
+
+      // Test: aggiungi un rettangolo per verificare che il canvas funzioni
+      const rect = new Rect({
+        left: 50,
+        top: 50,
+        width: 50,
+        height: 50,
+        fill: 'red',
+        stroke: 'blue',
+        strokeWidth: 2,
+        shadow: new Shadow({
+          color: 'rgba(0,0,0,0.3)',
+          blur: 10,
+          offsetX: 5,
+          offsetY: 5
+        })
+      });
+      fabricCanvas.add(rect);
+      fabricCanvas.renderAll();
+
+      canvasInstance.current = fabricCanvas;
+      setIsCanvasReady(true);
+      setupEventListeners(fabricCanvas);
+
+      // Handler per il ridimensionamento
+      const handleResize = () => {
+        if (!canvasEl.current || !canvasInstance.current) return;
+        
+        const container = canvasEl.current.parentElement;
+        const newWidth = container.clientWidth || window.innerWidth - 400;
+        const newHeight = container.clientHeight || window.innerHeight - 60;
+        canvasInstance.current.setDimensions({ width: newWidth, height: newHeight });
+        canvasInstance.current.renderAll();
+      };
+
+      // Aggiungiamo un listener per il beforeunload event
+      const handleBeforeUnload = (e) => {
+        if (unsavedChanges) {
+          // Mostra un messaggio di conferma prima di uscire
+          const message = 'Ci sono modifiche non salvate. Sei sicuro di voler uscire?';
+          e.returnValue = message;
+          return message;
+        }
+      };
+
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        
+        // Rimuovi tutti i listener e distruggi l'istanza del canvas quando il componente viene smontato
+        if (canvasInstance.current) {
+          canvasInstance.current.dispose();
+          canvasInstance.current = null;
+        }
+      };
+    } catch (error) {
+      console.error('❌ Canvas Initialization Error:', error);
+      setIsCanvasReady(false);
+    }
+  }, []); // Nota: dipendenze vuote per eseguire solo all'inizio
+
+  // Gestisci le modifiche non salvate in un useEffect separato
+  useEffect(() => {
+    if (nodes && nodes.length > 0) {
+      setUnsavedChanges(true);
+    }
+  }, [nodes]);
+
+  // Gestisci la sincronizzazione dei nodi in un useEffect separato
   useEffect(() => {
     if (!isCanvasReady || !canvasInstance.current || !currentProject) {
       return;
@@ -229,9 +293,36 @@ const CanvasManager = ({
         canvasInstance.current.renderAll();
         canvasInstance.current.setActiveObject(fabricObject);
       }
+      
+      setUnsavedChanges(true);
     } catch (err) {
       console.error('❌ Errore nel drop:', err);
     }
+  };
+
+  // Metodo per aggiornare un nodo visualmente sul canvas
+  const updateNodeOnCanvas = (nodeId, newData) => {
+    if (!canvasInstance.current) return false;
+    
+    // Trova l'oggetto sul canvas
+    const objects = canvasInstance.current.getObjects();
+    const node = objects.find(obj => obj.id === nodeId);
+    
+    if (!node) return false;
+    
+    // Aggiorna i dati dell'oggetto
+    node.data = newData;
+    
+    // Se il nome è cambiato, aggiorna anche l'etichetta del nodo
+    if (node._objects) {
+      const textbox = node._objects.find(o => o.type === 'textbox');
+      if (textbox && newData.name) {
+        textbox.set('text', newData.name);
+        canvasInstance.current.renderAll();
+      }
+    }
+    
+    return true;
   };
 
   return (
@@ -248,8 +339,16 @@ const CanvasManager = ({
           <p>Trascina gli elementi dal pannello strumenti al canvas per iniziare</p>
         </div>
       )}
+      {unsavedChanges && (
+        <div className="save-reminder">
+          Modifiche non salvate
+        </div>
+      )}
     </div>
   );
-};
+});
+
+// Aggiungi un displayName per strumenti di debug
+CanvasManager.displayName = 'CanvasManager';
 
 export default CanvasManager;

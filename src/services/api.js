@@ -1,5 +1,6 @@
 // FILE: api.js
-const API_BASE = 'http://localhost:3002/api';
+//const API_BASE = 'http://localhost:3002/api';
+const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3002/api';
 
 export async function fetchProjects() {
   const res = await fetch(`${API_BASE}/projects`);
