@@ -1,7 +1,4 @@
-import { Circle, Rect, Group, Textbox } from 'fabric';
-
-//export const createMachine = (canvas, left, top) => {
-
+import { Rect, Textbox, Group } from 'fabric';
 
 export const createMachine = (canvas, position, data = {}) => {
   if (!canvas) return null;

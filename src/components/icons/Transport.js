@@ -1,4 +1,4 @@
-import { Circle, Rect, Group, Textbox } from 'fabric';
+import { Rect, Textbox, Group } from 'fabric';
 
 export const createTransport = (canvas, position, data = {}) => {
   if (!canvas) return null;

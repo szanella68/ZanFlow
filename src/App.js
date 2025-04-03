@@ -3,72 +3,99 @@ import React, { useState, useEffect } from 'react';
 import CanvasManager from './components/canvas/CanvasManager';
 import PropertiesPanel from './components/panels/PropertiesPanel';
 import ToolsPanel from './components/panels/ToolsPanel';
+import TopMenu from './components/menus/TopMenu';
+import ErrorBoundary from './components/ErrorBoundary';
+import { useProject } from './context/ProjectContext';
+import { fetchNodes, createNode, updateNode } from './services/api';
+import './App.css';
 import './components/canvas/Canvas.css';
 import './components/panels/Panels.css';
-import TopMenu from './components/menus/TopMenu';
-
-
 
 const App = () => {
-  const [currentProject, setCurrentProject] = useState({ id: 11 }); // mock project
+  const { currentProject } = useProject();
   const [nodes, setNodes] = useState([]);
   const [selectedObject, setSelectedObject] = useState(null);
+  const [activeTool, setActiveTool] = useState(null);
 
-  // ⚡ Mock: carica nodi di progetto all'avvio
+  // Carica i nodi quando cambia il progetto corrente
   useEffect(() => {
     if (currentProject?.id) {
-      fetch(`/api/projects/${currentProject.id}/nodes`)
-        .then((res) => res.json())
-        .then((data) => setNodes(data))
+      console.log('Caricamento nodi per il progetto:', currentProject.id);
+      fetchNodes(currentProject.id)
+        .then((data) => {
+          console.log('Nodi caricati:', data);
+          setNodes(data);
+        })
         .catch((err) => console.error('❌ Errore caricamento nodi:', err));
+    } else {
+      setNodes([]);
     }
   }, [currentProject]);
 
   const handleNodeAdded = async (node) => {
-    const response = await fetch(`/api/nodes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(node)
-    });
-    const saved = await response.json();
-    setNodes((prev) => [...prev, saved]);
-    return saved;
+    try {
+      console.log('Aggiunta nodo:', node);
+      const saved = await createNode(node);
+      console.log('Nodo salvato:', saved);
+      setNodes((prev) => [...prev, saved]);
+      return saved;
+    } catch (err) {
+      console.error('Errore durante l\'aggiunta del nodo:', err);
+      throw err;
+    }
   };
 
   const handleNodeUpdated = async (updatedData) => {
-    if (!selectedObject?.id) return;
-    const response = await fetch(`/api/nodes/${selectedObject.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedData)
-    });
-    const updated = await response.json();
-    setNodes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+    if (!selectedObject?.id) {
+      console.error('Nessun nodo selezionato per l\'aggiornamento');
+      return;
+    }
+    
+    try {
+      console.log('Aggiornamento nodo:', selectedObject.id, updatedData);
+      const updated = await updateNode(selectedObject.id, updatedData);
+      console.log('Nodo aggiornato:', updated);
+      
+      // Aggiorna l'array di nodi
+      setNodes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+      
+      // Aggiorna anche l'oggetto selezionato
+      if (selectedObject) {
+        selectedObject.data = updatedData;
+      }
+    } catch (err) {
+      console.error('Errore durante l\'aggiornamento del nodo:', err);
+    }
   };
 
   const handleSelectTool = (tool) => {
     console.log('🔧 Tool selezionato:', tool);
-    // futuro: click-to-place
+    setActiveTool(tool);
   };
 
- return (
-    <>
+  return (
+    <div className="App">
       <TopMenu />
-      <div style={{ display: 'flex', height: 'calc(100vh - 40px)' }}>
+      <div className="main-container">
         <ToolsPanel onSelectTool={handleSelectTool} />
-        <CanvasManager
-          currentProject={currentProject}
-          nodes={nodes}
-          onNodeAdded={handleNodeAdded}
-          onNodeSelected={setSelectedObject}
-          onNodeUpdated={handleNodeUpdated}
-        />
+        
+        <ErrorBoundary>
+          <CanvasManager
+            currentProject={currentProject}
+            nodes={nodes}
+            onNodeAdded={handleNodeAdded}
+            onNodeSelected={setSelectedObject}
+            onNodeUpdated={handleNodeUpdated}
+            activeTool={activeTool}
+          />
+        </ErrorBoundary>
+        
         <PropertiesPanel
           selectedObject={selectedObject}
           onUpdate={handleNodeUpdated}
         />
       </div>
-    </>
+    </div>
   );
 };
 

@@ -51,7 +51,7 @@
 .app-title {
   margin-left: auto;
   font-weight: bold;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 /* Stili per le finestre di dialogo */
@@ -75,7 +75,7 @@
   width: 400px;
   max-width: 90%;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  color: #333; /* Colore testo scuro per contrasto */
+  color: #333;
 }
 
 .dialog h3 {
@@ -158,8 +158,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #333; /* Colore testo scuro per contrasto */
-  background-color: #f5f5f5; /* Sfondo chiaro */
+  color: #333;
+  background-color: #f5f5f5;
 }
 
 .projects-list li:hover {
@@ -169,16 +169,16 @@
 .projects-list li.selected {
   background-color: #def2f1;
   border-left: 3px solid #3aafa9;
-  color: #17252a; /* Testo ancora più scuro per la selezione */
+  color: #17252a;
   font-weight: bold;
 }
 
 .project-name {
   font-weight: 500;
-  color: #333; /* Assicuriamo che il nome sia ben visibile */
+  color: #333;
 }
 
 .project-date {
   font-size: 12px;
-  color: #666; /* Colore più scuro per la data */
+  color: #666;
 }

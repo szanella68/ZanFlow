@@ -1,7 +1,7 @@
 // FILE: CanvasManager.js
 import React, { useEffect, useRef, useState } from 'react';
-import { Canvas } from 'fabric';
-import { createMachine } from '../icons/Machine';
+import { Canvas, Rect, Shadow }  from 'fabric';
+
 import './Canvas.css';
 import NodeFactory from '../icons/NodeFactory';
 
@@ -42,62 +42,20 @@ const CanvasManager = ({
   onNodeUpdated 
 }) => {
   const canvasEl = useRef(null);
-  const [canvas, setCanvas] = useState(null);
+  const canvasInstance = useRef(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
 
-  const performCanvasDiagnostics = (fabricCanvas) => {
-    console.group('🔍 Comprehensive Canvas Diagnostics');
-    if (!fabricCanvas) {
-      console.error('❌ No canvas object available');
-      console.groupEnd();
-      return;
-    }
-    try {
-      console.log('Canvas DOM Element:', {
-        element: canvasEl.current,
-        clientWidth: canvasEl.current?.clientWidth,
-        clientHeight: canvasEl.current?.clientHeight,
-        offsetWidth: canvasEl.current?.offsetWidth,
-        offsetHeight: canvasEl.current?.offsetHeight
-      });
-      console.log('Canvas Fabric Details:', {
-        width: fabricCanvas.getWidth(),
-        height: fabricCanvas.getHeight(),
-        backgroundColor: fabricCanvas.backgroundColor
-      });
-      const container = canvasEl.current?.parentElement;
-      console.log('Container Styles:', {
-        display: container?.style.display,
-        visibility: container?.style.visibility,
-        opacity: container?.style.opacity,
-        width: container?.style.width,
-        height: container?.style.height
-      });
-      const objects = fabricCanvas.getObjects();
-      console.log(`Canvas Objects (${objects.length}):`, 
-        objects.map((obj, index) => ({
-          index,
-          type: obj.type,
-          objectType: obj.objectType,
-          left: obj.left,
-          top: obj.top,
-          width: obj.width,
-          height: obj.height
-        }))
-      );
-    } catch (error) {
-      console.error('❌ Diagnostic Error:', error);
-    }
-    console.groupEnd();
-  };
-
+  // Inizializzazione del canvas
   useEffect(() => {
-    if (canvasEl.current && !canvas) {
+    if (canvasEl.current && !canvasInstance.current) {
       console.log('🚀 Initializing Canvas');
       try {
         const container = canvasEl.current.parentElement;
+        // Imposta dimensioni ragionevoli per il canvas
         const w = container.clientWidth || window.innerWidth - 400;
         const h = container.clientHeight || window.innerHeight - 60;
+
+        console.log('Dimensioni canvas:', { w, h });
 
         const fabricCanvas = new Canvas(canvasEl.current, {
           width: w,
@@ -108,11 +66,30 @@ const CanvasManager = ({
           renderOnAddRemove: true
         });
 
-        setCanvas(fabricCanvas);
+        // Test: aggiungi un rettangolo per verificare che il canvas funzioni
+        const rect = new Rect({
+          left: 50,
+          top: 50,
+          width: 50,
+          height: 50,
+          fill: 'red',
+          stroke: 'blue',
+          strokeWidth: 2,
+          shadow: new Shadow({
+            color: 'rgba(0,0,0,0.3)',
+            blur: 10,
+            offsetX: 5,
+            offsetY: 5
+          })
+        });
+        fabricCanvas.add(rect);
+        fabricCanvas.renderAll();
+
+        canvasInstance.current = fabricCanvas;
         setIsCanvasReady(true);
-        performCanvasDiagnostics(fabricCanvas);
         setupSelectionListeners(fabricCanvas, onNodeSelected);
 
+        // Handler per il ridimensionamento
         const handleResize = () => {
           const container = canvasEl.current.parentElement;
           const newWidth = container.clientWidth || window.innerWidth - 400;
@@ -125,57 +102,50 @@ const CanvasManager = ({
         return () => {
           window.removeEventListener('resize', handleResize);
           fabricCanvas.dispose();
+          canvasInstance.current = null;
         };
       } catch (error) {
         console.error('❌ Canvas Initialization Error:', error);
         setIsCanvasReady(false);
       }
     }
-  }, [canvasEl, canvas]);
+  }, [canvasEl, onNodeSelected]);
 
+  // Sincronizzazione dei nodi quando cambiano
   useEffect(() => {
-    if (!isCanvasReady || !canvas || !currentProject || !Array.isArray(nodes)) {
+    if (!isCanvasReady || !canvasInstance.current || !currentProject) {
       return;
     }
 
-    canvas.getObjects().forEach(obj => canvas.remove(obj));
+    console.log('🔄 Syncing nodes:', nodes);
+    
+    // Rimuovi tutti gli oggetti esistenti
+    canvasInstance.current.clear();
+    
+    if (!Array.isArray(nodes) || nodes.length === 0) {
+      console.log('Nessun nodo da sincronizzare');
+      canvasInstance.current.renderAll();
+      return;
+    }
 
     let created = 0;
-    nodes.forEach((node, index) => {
-      const obj = NodeFactory.createNodeFromData(canvas, node);
-      if (obj) {
-        created++;
+    nodes.forEach((node) => {
+      try {
+        console.log('Creazione nodo:', node);
+        const obj = NodeFactory.createNodeFromData(canvasInstance.current, node);
+        if (obj) {
+          created++;
+        }
+      } catch (err) {
+        console.error('Errore creazione nodo:', err);
       }
     });
-    canvas.renderAll();
+
     console.log(`✅ Synced ${created}/${nodes.length} nodes`);
+    canvasInstance.current.renderAll();
+  }, [isCanvasReady, nodes, currentProject]);
 
-    // 🔍 Diagnostica visiva degli oggetti sul canvas
-    console.log('🚨 Oggetti finali nel canvas:', canvas.getObjects());
-
-    canvas.getObjects().forEach((obj, i) => {
-      const { left, top, width, height, type, objectType } = obj;
-      console.log(`🔎 Obj ${i}:`, {
-        type,
-        objectType,
-        left,
-        top,
-        width,
-        height,
-        text: obj.text || (obj._objects ? obj._objects.find(o => o.type === 'textbox')?.text : '')
-      });
-
-      obj.set({
-        stroke: '#ff0000',
-        strokeWidth: 1,
-        borderColor: '#000',
-        cornerColor: '#00ff00'
-      });
-    });
-
-    canvas.renderAll();
-  }, [isCanvasReady, canvas, nodes, currentProject]);
-
+  // Gestione del drag-and-drop
   const handleDragOver = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
@@ -183,7 +153,7 @@ const CanvasManager = ({
 
   const handleDrop = async (e) => {
     e.preventDefault();
-    if (!currentProject || !canvas) return;
+    if (!currentProject || !canvasInstance.current) return;
 
     const toolType = e.dataTransfer.getData('toolType');
     if (!toolType) return;
@@ -192,6 +162,9 @@ const CanvasManager = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    console.log(`📌 Drop at x:${x}, y:${y} for type:${toolType}`);
+
+    // Crea i dati base per il nuovo nodo
     const baseNode = {
       name: toolType.charAt(0).toUpperCase() + toolType.slice(1),
       cycleTime: 0,
@@ -215,6 +188,7 @@ const CanvasManager = ({
         return;
     }
 
+    // Crea un nuovo nodo
     const nodeForDb = {
       project_id: currentProject.id,
       node_type: toolType,
@@ -225,16 +199,35 @@ const CanvasManager = ({
     };
 
     try {
-      const savedNode = await onNodeAdded(nodeForDb);
-      const fabricObject = NodeFactory.createNodeFromData(canvas, {
-        ...savedNode,
+      // Test: crea un nodo direttamente nel canvas prima di chiamare l'API
+      console.log('Creazione nodo temporaneo nel canvas');
+      const tempNode = {
+        node_type: toolType,
+        name: nodeData.name,
         position_x: x,
-        position_y: y
-      });
+        position_y: y,
+        data: nodeData
+      };
+      
+      const tempObj = NodeFactory.createNodeFromData(canvasInstance.current, tempNode);
+      if (tempObj) {
+        canvasInstance.current.renderAll();
+        canvasInstance.current.setActiveObject(tempObj);
+      }
+
+      // Salva il nodo tramite API
+      const savedNode = await onNodeAdded(nodeForDb);
+      console.log('Nodo salvato:', savedNode);
+      
+      // Rimuovi l'oggetto temporaneo e crea quello definitivo
+      if (tempObj) {
+        canvasInstance.current.remove(tempObj);
+      }
+      
+      const fabricObject = NodeFactory.createNodeFromData(canvasInstance.current, savedNode);
       if (fabricObject) {
-        canvas.renderAll();
-        canvas.setActiveObject(fabricObject);
-        canvas.fire('selection:created', { selected: [fabricObject] });
+        canvasInstance.current.renderAll();
+        canvasInstance.current.setActiveObject(fabricObject);
       }
     } catch (err) {
       console.error('❌ Errore nel drop:', err);
@@ -243,11 +236,16 @@ const CanvasManager = ({
 
   return (
     <div className="canvas-container" onDragOver={handleDragOver} onDrop={handleDrop}>
-      <canvas ref={canvasEl} id="fabric-canvas" style={{ border: '2px solid #3aafa9' }} />
+      <canvas ref={canvasEl} id="fabric-canvas" />
       {!isCanvasReady && <div className="canvas-loading">Inizializzazione del canvas...</div>}
       {isCanvasReady && !currentProject && (
         <div className="canvas-message">
           <p>Seleziona o crea un progetto dal menu File</p>
+        </div>
+      )}
+      {isCanvasReady && currentProject && nodes && nodes.length === 0 && (
+        <div className="canvas-message">
+          <p>Trascina gli elementi dal pannello strumenti al canvas per iniziare</p>
         </div>
       )}
     </div>
